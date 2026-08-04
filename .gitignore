@@ -5,6 +5,10 @@ __pycache__/
 venv/
 *.egg-info/
 .pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.cover
 
 # Node
 node_modules/
@@ -12,6 +16,13 @@ dist/
 
 # Env
 .env
+.env.local
 
 # OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
