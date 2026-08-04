@@ -1,0 +1,15 @@
+# Force LF line endings for files that run inside Linux containers or are
+# parsed by tools sensitive to line endings, regardless of the developer's
+# OS or editor settings. Without this, editing a .sh script on Windows can
+# silently introduce CRLF endings that break with "bad interpreter" errors
+# once the file is bind-mounted into a Linux container.
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.py text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# PowerShell scripts are meant to run natively on Windows -- keep CRLF.
+*.ps1 text eol=crlf

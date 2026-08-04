@@ -1,0 +1,102 @@
+# ORION Platform -- local development stack for the CareerOS product.
+# CareerOS is the first product built on the ORION Platform (see
+# docs/ARCHITECTURE.md and docs/platform/PLATFORM_KERNEL.md). The backend
+# build context is the repository root so the shared platform/kernel
+# package can be installed alongside the product code -- see
+# products/careeros/backend/Dockerfile.
+# Primary development platform: Windows + Docker Compose. No cloud dependency.
+#
+# Naming: this file defines the "orion-careeros" Compose project, not the
+# platform as a whole -- each ORION product gets its own compose project
+# name and its own "orion-<product>-*" image/container/volume/network
+# names so that multiple ORION products (CareerOS, NDIP, future products)
+# can run on the same machine at the same time without name collisions.
+# See docs/adr/0003-docker-naming-and-multi-project-isolation.md.
+name: orion-careeros
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: orion-careeros-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-careeros}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-careeros}
+      POSTGRES_DB: ${POSTGRES_DB:-careeros}
+    ports:
+      # Host-side port is configurable (POSTGRES_PORT in .env) so this
+      # stack can run alongside other Postgres-using projects (e.g. NDIP)
+      # on the same machine without a port collision. The container-internal
+      # port (5432) never changes -- only how it's published to the host.
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - orion_careeros_db_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sh:/docker-entrypoint-initdb.d/init_db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-careeros} -d ${POSTGRES_DB:-careeros}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orion-careeros-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: products/careeros/backend/Dockerfile
+    image: orion-careeros-backend
+    container_name: orion-careeros-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-careeros}:${POSTGRES_PASSWORD:-careeros}@db:5432/${POSTGRES_DB:-careeros}
+      DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-careeros}:${POSTGRES_PASSWORD:-careeros}@db:5432/${POSTGRES_DB:-careeros}
+    ports:
+      # Host-side port is configurable (BACKEND_PORT in .env) -- same
+      # collision-avoidance reasoning as the db service above.
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./products/careeros/backend:/app/products/careeros/backend
+      - ./platform:/app/platform
+    working_dir: /app/products/careeros/backend
+    depends_on:
+      db:
+        condition: service_healthy
+    # orion-kernel is installed editable at image-build time (see Dockerfile);
+    # the bind mounts above only override application/kernel source for
+    # live-reload, not the installed package metadata, so no reinstall is
+    # needed here.
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    networks:
+      - orion-careeros-network
+
+  frontend:
+    build:
+      context: ./products/careeros/frontend
+      dockerfile: Dockerfile
+    image: orion-careeros-frontend
+    container_name: orion-careeros-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+    ports:
+      # Host-side port is configurable (FRONTEND_PORT in .env) -- same
+      # collision-avoidance reasoning as the db service above.
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./products/careeros/frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - orion-careeros-network
+
+networks:
+  orion-careeros-network:
+    name: orion-careeros-network
+
+volumes:
+  orion_careeros_db_data:
+    name: orion-careeros-db-data

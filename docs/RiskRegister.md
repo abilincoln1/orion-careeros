@@ -1,0 +1,49 @@
+# Risk Register
+
+Likelihood and Impact are rated Low / Medium / High. Status is Open /
+Mitigated / Accepted / Closed. Owner is a role, not necessarily a named
+individual, since this is currently a single-contributor project.
+
+## Technical risks
+
+| ID | Risk | Likelihood | Impact | Mitigation | Owner | Status |
+|---|---|---|---|---|---|---|
+| RT-01 | Docker Compose stack had never been run end-to-end; a container-specific defect could surface only when the user first ran it. **Materialized:** the user's first `docker compose up --build` crash-looped the backend on a `CORS_ORIGINS` env-parsing bug (pydantic-settings tried to JSON-decode a comma-separated value) that this session's Docker-less verification had not exercised, because it never sourced that field from a real environment-variable string the way `docker compose --env-file .env` does. | Was Medium | Medium (pre-fix) | Fixed (`NoDecode` annotation, see TD-R06) and reproduced/verified locally without Docker, then **confirmed inside an actual container**: the user re-ran `docker compose up --build` and the backend started cleanly with no crash loop, migrations applied, frontend served, and Docker's own `HEALTHCHECK` directive fired successfully against `/api/v1/health` at its configured interval (see TD-R07). No further action needed. | Chief Software Engineer / User | Closed |
+| RT-02 | `orion_kernel` has one consumer; its API surface may need breaking changes once a second product exists. | Medium | Low | Kept deliberately small and documented; ADR 0002 records the rationale. Revisit at second-product onboarding. | Chief Software Engineer | Accepted |
+| RT-03 | No CI pipeline; regressions could be merged without automatic detection. | High (no CI = certain gap) | Medium | Manual verification performed each session; CI recommended as first Sprint 2 prerequisite. | Chief Software Engineer | Open |
+| RT-04 | SQLAlchemy async (asyncpg) and Alembic sync (psycopg2) use two different drivers against the same database; a future SQLAlchemy/driver upgrade could desync. | Low | Medium | Both connection strings are defined together in one Settings class; documented in ADR 0001. | Chief Software Engineer | Accepted |
+
+## Security risks
+
+| ID | Risk | Likelihood | Impact | Mitigation | Owner | Status |
+|---|---|---|---|---|---|---|
+| RS-01 | Placeholder `SECRET_KEY` used unchanged in a real deployment. | Low (documented prominently) | High | `.env.example` marks it clearly insecure; README instructs rotation via `openssl rand -hex 32`. Consider a startup guard that refuses `ENVIRONMENT=production` with the placeholder value. | Chief Software Engineer | Open |
+| RS-02 | No rate limiting on auth endpoints enables credential-stuffing/brute-force if ever exposed beyond localhost. | Low today (local-only) | High (if exposed) | Documented in TechnicalDebt (TD-003); must be addressed before any non-local deployment. | Chief Software Engineer | Open |
+| RS-03 | No dependency/CVE scanning in place. | Medium | Medium | Add `pip-audit` / `npm audit` once CI exists (TD-004, TD-006). | Chief Software Engineer | Open |
+| RS-04 | No RBAC/authorization layer; any authenticated user has full access to their own data with no finer-grained control. | Low (single-user Sprint 1 scope) | Medium (grows with multi-user phase) | Tracked as TD-002; must precede multi-user SaaS phase per project mission. | Chief Architect | Accepted for current scope |
+| RS-05 | `pip-audit` (run as part of the new metrics framework, `scripts/metrics/collect_metrics.py`) found 22 known vulnerabilities in pinned dependencies, most notably `python-jose 3.3.0` (the library CareerOS's entire JWT auth framework depends on) and `starlette 0.41.3` (pulled in by FastAPI). | Confirmed (found empirically this session, not hypothetical) | Medium-High (auth-adjacent library) | Tracked as TD-011: evaluate migrating to `PyJWT` and bumping `starlette`/`fastapi`/`python-multipart`/`pytest` to patched versions as a dedicated task, since a crypto-library swap is not a "safe improvement" to make incidentally. | Chief Software Engineer | Open |
+
+## Operational risks
+
+| ID | Risk | Likelihood | Impact | Mitigation | Owner | Status |
+|---|---|---|---|---|---|---|
+| RO-01 | Single-developer (AI-agent-executed) project: no second reviewer catches mistakes before they reach the working folder. | Medium | Medium | Verification is run and recorded explicitly (not just claimed); Chief Architect review gate exists at sprint boundaries. | Chief Architect | Accepted |
+| RO-02 | No backup/restore procedure defined for the Postgres data volume (`careeros_db_data`). | Medium | Medium (local dev data only, today) | Acceptable for local single-user development; must be revisited before any deployment holding real user data. | Chief Software Engineer | Open |
+| RO-03 | No monitoring/alerting beyond liveness/readiness endpoints. | High (nothing implemented) | Low today (local dev only) | Documented as a deferred Platform Kernel responsibility (Monitoring) in `docs/platform/PLATFORM_KERNEL.md`. | Chief Software Engineer | Accepted for current scope |
+| RO-04 | This machine runs multiple independent Docker-based projects (e.g. NDIP) alongside CareerOS. Generic container/volume names and fixed host ports (`5432`/`8000`/`5173`) could collide with another project's stack. | Was Medium (real collision risk on a shared dev machine) | Medium (stack fails to start, or worse, connects to the wrong container) | Mitigated: all container/image/network/volume names now use the `orion-careeros-*` pattern (ADR 0003), and host ports are overridable via `.env` (`POSTGRES_PORT`/`BACKEND_PORT`/`FRONTEND_PORT`) without editing `docker-compose.yml`. | Chief Software Engineer | Mitigated |
+
+## Business risks
+
+| ID | Risk | Likelihood | Impact | Mitigation | Owner | Status |
+|---|---|---|---|---|---|---|
+| RB-01 | Scope creep: an agent (or contributor) implements authorized-sounding business logic (Career DNA, Job Intelligence, AI) ahead of explicit authorization. | Low (explicitly guarded against in this directive and in `governance/SPRINT_APPROVAL_PROCESS.md`) | High (violates Human Approval / governance discipline that is core to the product's credibility) | Sprint approval process requires explicit Chief Architect authorization before any new business logic; this Sprint 1 Closure work deliberately implements none. | Chief Architect | Mitigated |
+| RB-02 | Single target user (Abiodun Adeniran) means the platform's real-world value is unproven until Sprint 2+ delivers recommendations against real job data. | Medium | Medium | Sprint 2 plan (`docs/SPRINT-2-IMPLEMENTATION-PLAN.md`) prioritizes the Career DNA Service as the next value-delivering increment. | Chief Architect | Open |
+
+## Platform risks
+
+| ID | Risk | Likelihood | Impact | Mitigation | Owner | Status |
+|---|---|---|---|---|---|---|
+| RP-01 | Platform/product boundary erodes over time if a future contributor adds product-specific code into `/platform/kernel` for convenience. | Medium | Medium | `governance/ARCHITECTURE_PRINCIPLES.md` principle 1-2 and `CODING_STANDARDS.md` naming rule (kernel never imports from `app.*`) make the violation checkable by inspection. | Chief Architect (review) | Mitigated |
+| RP-02 | Reserved directories (`shared_services`, `shared_libraries`, `shared_connectors`) could accumulate speculative code before a real second consumer exists, recreating the complexity this restructure tried to avoid. | Low | Medium | Each has a README explicitly stating "not yet implemented" and the condition under which implementation is appropriate. | Chief Architect (review) | Mitigated |
+| RP-03 | Only one product exists, so the "platform" abstraction is unproven against real reuse; the kernel's boundaries are a best guess. | Medium | Low | Acknowledged in ADR 0002 consequences and TD-001; revisit at second-product onboarding rather than pretend certainty now. | Chief Software Engineer | Accepted |
+| RP-04 | `orion_kernel`'s current install path (`-e ../../../platform/kernel`) only works for a product inside this same repository. A product in a genuinely separate repository (NDIP or a future product) cannot consume it as-is. | High (certain, if a cross-repo product is ever authorized) | Medium (blocks kernel reuse, not CareerOS itself) | Documented as TD-012 and ADR 0003 Decision 2; fix identified (git-based pip dependency with kernel version tags) but explicitly deferred until a real second, separate-repository product needs it. | Chief Software Engineer | Open (deferred by design) |

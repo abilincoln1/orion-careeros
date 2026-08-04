@@ -1,0 +1,87 @@
+{
+  "code_coverage": {
+    "percent_covered": 83.76
+  },
+  "cyclomatic_complexity": {
+    "average": 1.77,
+    "max": 7,
+    "count": 47
+  },
+  "dependencies": {
+    "backend_python": 17,
+    "frontend_npm": 7
+  },
+  "migration_count": 1,
+  "api_endpoint_count": 4,
+  "docker_image_size_mb": null,
+  "security_findings": {
+    "vulnerabilities_found": 22,
+    "vulnerable_packages": [
+      {
+        "name": "python-jose",
+        "version": "3.3.0",
+        "vuln_ids": [
+          "PYSEC-2024-233",
+          "PYSEC-2024-232",
+          "PYSEC-2024-232",
+          "PYSEC-2024-233",
+          "PYSEC-2025-185"
+        ]
+      },
+      {
+        "name": "python-multipart",
+        "version": "0.0.20",
+        "vuln_ids": [
+          "PYSEC-2026-1852",
+          "PYSEC-2026-3038",
+          "PYSEC-2026-3037",
+          "PYSEC-2026-3036",
+          "PYSEC-2026-3040",
+          "PYSEC-2026-3039"
+        ]
+      },
+      {
+        "name": "pytest",
+        "version": "8.3.4",
+        "vuln_ids": [
+          "PYSEC-2026-1845"
+        ]
+      },
+      {
+        "name": "starlette",
+        "version": "0.41.3",
+        "vuln_ids": [
+          "PYSEC-2026-161",
+          "PYSEC-2026-161",
+          "PYSEC-2026-248",
+          "PYSEC-2026-249",
+          "PYSEC-2026-248",
+          "PYSEC-2026-1942",
+          "PYSEC-2026-1941",
+          "PYSEC-2026-2281",
+          "PYSEC-2026-2280"
+        ]
+      },
+      {
+        "name": "ecdsa",
+        "version": "0.19.2",
+        "vuln_ids": [
+          "PYSEC-2026-1325"
+        ]
+      }
+    ]
+  },
+  "technical_debt": {
+    "open": 11,
+    "resolved": 7
+  },
+  "architecture_compliance": {
+    "kernel_imports_product_code": [],
+    "compliant": true
+  },
+  "lines_of_code": {
+    "backend_app": 475,
+    "kernel": 425,
+    "tests": 193
+  }
+}

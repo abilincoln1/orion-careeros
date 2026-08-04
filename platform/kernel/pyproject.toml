@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orion-kernel"
+version = "0.1.0"
+description = "ORION Platform Kernel -- shared, product-agnostic engineering primitives (config, logging, security, database, health, request middleware) used by every ORION Platform product, starting with CareerOS."
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "SQLAlchemy>=2.0",
+    "python-jose[cryptography]>=3.3",
+    "passlib[bcrypt]>=1.7",
+    "fastapi>=0.115",
+]
+
+[tool.setuptools.packages.find]
+include = ["orion_kernel*"]

@@ -1,0 +1,12 @@
+# Applies to the repo-root build context (see docker-compose.yml backend service).
+**/__pycache__
+**/*.pyc
+**/.venv
+**/venv
+**/*.egg-info
+**/.pytest_cache
+**/node_modules
+**/dist
+.git
+.env
+outputs

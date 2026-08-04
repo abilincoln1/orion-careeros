@@ -1,0 +1,49 @@
+%% ORION Platform Architecture -- Sprint 1 Closure
+%% Render with any Mermaid-compatible viewer (e.g. https://mermaid.live)
+graph TB
+    subgraph Client["Client"]
+        FE["CareerOS Frontend<br/>(React + TS + Vite)<br/>products/careeros/frontend"]
+    end
+
+    subgraph Product["Product: CareerOS"]
+        API["FastAPI app<br/>products/careeros/backend/app"]
+        Models["Models<br/>(users -- Career Knowledge Graph seed)"]
+        Schemas["Pydantic Schemas"]
+        Core["app/core/*<br/>(thin bindings to kernel)"]
+        API --> Models
+        API --> Schemas
+        API --> Core
+    end
+
+    subgraph Platform["ORION Platform Kernel (platform/kernel/orion_kernel)"]
+        Config["config.py<br/>OrionBaseSettings"]
+        Logging["logging.py"]
+        Security["security.py<br/>JWT + bcrypt"]
+        DB["database.py<br/>engine/session factories"]
+        Health["health.py<br/>router factory"]
+        Middleware["middleware.py<br/>RequestContextMiddleware"]
+    end
+
+    subgraph Reserved["Reserved (documented, not implemented)"]
+        SharedServices["shared_services/<br/>Notifications, Event Bus, Scheduling,<br/>Audit, Monitoring, File Storage,<br/>Document Engine, Communication Hub"]
+        SharedLibs["shared_libraries/"]
+        SharedConn["shared_connectors/<br/>Job Intelligence connector framework"]
+    end
+
+    subgraph Infra["Infrastructure (Docker Compose)"]
+        PG[("PostgreSQL 16")]
+    end
+
+    FE -->|"HTTP /api/v1/*"| API
+    Core --> Config
+    Core --> Logging
+    Core --> Security
+    Core --> DB
+    API --> Health
+    API --> Middleware
+    DB --> PG
+
+    classDef implemented fill:#e3f3e8,stroke:#1b7a43,color:#1a1a2e;
+    classDef reserved fill:#ededed,stroke:#6b6b6b,color:#1a1a2e,stroke-dasharray: 4 3;
+    class Config,Logging,Security,DB,Health,Middleware implemented;
+    class SharedServices,SharedLibs,SharedConn reserved;
