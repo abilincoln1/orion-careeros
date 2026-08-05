@@ -20,10 +20,15 @@ A subsequent "Docker Build Review & Sprint 2 Readiness" directive
 verified repository independence from other projects on this machine
 (e.g. NDIP), audited and hardened the Docker setup for multi-project use,
 and added a one-command bootstrap script -- see
-`docs/SPRINT-2-READINESS-REPORT.md`. No AI, scraping, matching, or
-document-generation logic is implemented yet; see `docs/ARCHITECTURE.md`
-for what's deferred and why. Sprint 2 is not authorised -- see
-`docs/SPRINT-2-IMPLEMENTATION-PLAN.md` for planning only.
+`docs/SPRINT-2-READINESS-REPORT.md`. The Career DNA Service (Person,
+Employment/Role, Skill/Competency, Evidence -- 24 entities across 4
+API routers) is implemented and under active engineering review; see
+`docs/adr/0004-career-dna-domain-model.md` for the architecture and
+`docs/Sprint1.6-Candidate-Acceptance-Review.md` for its current
+acceptance status. AI/matching/document-generation logic (which
+consumes Career DNA data, rather than being Career DNA itself) remains
+deferred -- see `docs/ARCHITECTURE.md` for what's still out of scope
+and why.
 
 **This repository is one of several independent projects that may live on
 the same machine** (e.g. alongside `NDIP` under `C:\Projects`). It does

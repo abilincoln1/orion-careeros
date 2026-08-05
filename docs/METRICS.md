@@ -47,10 +47,37 @@ Note on API count: the regex only matches `@router.<verb>(` decorators
 written directly in product code. The three health endpoints
 (`/health`, `/health/live`, `/health/ready`) are registered dynamically
 inside `orion_kernel.health.build_health_router`, so they don't appear as
-`@router.get(...)` literals in `app/`. Counting them by hand: CareerOS
-currently exposes **7** total endpoints (4 auth + 3 health). The script
-undercounts kernel-provided routes by design (it's meant to measure
-product-authored surface area); this is noted here rather than silently
-left ambiguous.
+`@router.get(...)` literals in `app/`. The script undercounts
+kernel-provided routes by design (it's meant to measure product-authored
+surface area); this is noted here rather than silently left ambiguous.
+
+## Sprint 1.6 baseline (Candidate Acceptance Review, captured 2026-08-05)
+
+Regenerated after the Sprint 1.5 Repository Reconciliation Report found
+the Sprint 1 Closure baseline below did not reflect the already-existing
+Career DNA implementation, and after Sprint 1.6's review found and fixed
+a coverage-measurement gap (TD-R11) that had been silently undercounting
+every prior run.
+
+| Metric | Value | Change from Sprint 1 Closure baseline |
+|---|---|---|
+| Code coverage | **96.01%** | +12.25pp -- see note below; this is not purely new tests |
+| Cyclomatic complexity | average 1.52, max 7, across 209 functions/methods | count nearly 4.5x (47 -> 209) since Career DNA adds ~30 model classes and 4 services; average complexity per function actually *dropped* (1.77 -> 1.52), consistent with CRUD-shaped code, not business-logic sprawl |
+| Migration count | 2 | +1 (Career DNA schema migration) |
+| API endpoint count (regex) | 25 | +21 (Career DNA); 28 by hand-count including kernel health routes, same counting convention as the Sprint 1 baseline note above |
+| Technical debt | 13 open, 11 resolved | +2 open (TD-013, TD-017), +4 resolved (TD-R08 through TD-R11) this session |
+| Architecture compliance | Compliant -- 0 instances of kernel importing product code | unchanged |
+
+**Important note on the coverage jump:** the increase from 83.76% to
+96.01% is **not** purely attributable to the ~56 new tests written this
+session. A material part of it is `TD-R11`: no `.coveragerc` existed
+before this session, so `coverage.py` was not tracing execution across
+the `greenlet` context switches SQLAlchemy's async engine uses
+internally, silently undercounting service-layer coverage in every prior
+run -- including, almost certainly, the original Sprint 1 Closure
+baseline itself, which was never re-measured with the corrected
+configuration. Read the pre-Sprint-1.6 numbers in this document with
+that caveat; they are likely an undercount of what Sprint 1 code
+actually achieved, not a real regression.
 
 Full raw output is in `docs/metrics.json`, regenerated each run.

@@ -2,13 +2,16 @@
 
 ## Scope of this document
 This describes the ORION Platform + CareerOS foundation as actually
-built (Sprint 1 plus Sprint 1 Closure's platform restructure), plus how
-the approved high-level service architecture (Career DNA, Job
+built (Sprint 1, Sprint 1 Closure's platform restructure, and the
+Career DNA Service -- see `docs/adr/0004-career-dna-domain-model.md`),
+plus how the remaining approved high-level service architecture (Job
 Intelligence, Recruiter Intelligence, Company Intelligence, Matching
 Engine, Application Studio, Interview Studio, Communication Hub,
-Analytics Engine, Learning Intelligence, Document Generation) will attach
-to it in later, separately-authorised sprints. No business logic for
-those services exists yet -- this is the load-bearing foundation only.
+Analytics Engine, Learning Intelligence, Document Generation) will
+attach to it in later, separately-authorised sprints. Career DNA is the
+foundational data layer those later services will read from; no
+business logic for the AI/matching/generation services themselves
+exists yet.
 
 **ORION is the platform. CareerOS is a product built on it.** This
 distinction, introduced at Sprint 1 Closure by Chief Architect directive,

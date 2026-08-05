@@ -1,5 +1,19 @@
 # Sprint 1 Closure -- Acceptance Report
 
+> **Superseded in part -- see note (added 2026-08-05, Sprint 1.6):**
+> This report's Task 10 states "No Sprint 2 code exists. Sprint 2 remains
+> unauthorised" and "no Career DNA implementation, no business logic, no
+> AI." Those statements were false as of the same commit this report was
+> committed in -- the Career DNA schema (24 entities, 2 migrations, 21
+> endpoints, 4 services) already existed. This was found by
+> `docs/Sprint1.5-Reconciliation-Report` and confirmed, reviewed, and
+> accepted (with conditions closed) by Sprint 1.6's Candidate Acceptance
+> Review -- see `docs/adr/0004-career-dna-domain-model.md` and
+> `docs/RiskRegister.md` RB-01 for the corrected record. Left below
+> unedited, per this project's convention of not rewriting historical
+> reports (see ADR 0002's amendment note for the same pattern) -- this
+> banner is the correction, not a rewrite of the original text.
+
 **To:** Chief Architect
 **From:** Claude, Chief Software Engineer, Project ORION
 **Date:** 2026-08-03

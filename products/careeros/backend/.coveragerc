@@ -1,0 +1,16 @@
+[run]
+# SQLAlchemy's async engine executes ORM/session code inside greenlets
+# (via the greenlet-based sync/async bridge), not just plain asyncio
+# tasks. coverage.py's default tracer does not follow execution across
+# greenlet switches unless explicitly told to -- without this, coverage
+# silently undercounts any code that runs inside that bridge, which is
+# most of app/services/ and parts of app/api/. Found during Sprint 1.6
+# Test Completion: newly-added tests that verifiably exercised specific
+# service-layer branches (confirmed via direct reproduction scripts and
+# passing assertions on their side effects) were still being reported as
+# "missed" by coverage. No .coveragerc existed before this session, so
+# this gap has been present since Sprint 1 -- the original 83.76%
+# baseline in docs/METRICS.md was very likely an undercount for the same
+# reason, not just Career DNA's new code.
+concurrency = greenlet
+source = app

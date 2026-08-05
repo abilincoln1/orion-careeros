@@ -28,6 +28,32 @@ from app.repositories.taxonomy import upsert_taxonomy
 from app.schemas.career_dna import EmploymentCreate, EmploymentPromote, EmploymentUpdate
 
 
+
+def _is_primary_current_conflict(exc: IntegrityError) -> bool:
+    """
+    True if this IntegrityError is the 'one primary current employment per
+    person' partial unique index (ux_employment_one_primary_current_per_person)
+    being violated, False for any other integrity error (so callers still
+    re-raise anything unexpected instead of silently swallowing it).
+
+    Checked against BOTH dialects' actual error message formats, found via
+    real Sprint 1.6 test execution against SQLite:
+    - PostgreSQL includes the constraint/index name directly, e.g.
+      '...violates unique constraint "ux_employment_one_primary_current_per_person"'.
+    - SQLite does NOT include the index name at all; it reports
+      'UNIQUE constraint failed: employment.person_id' -- the column, not
+      the index. A check for only the index-name substring (the original
+      implementation) therefore silently failed to match under SQLite,
+      letting the raw IntegrityError escape as an unhandled 500 instead of
+      the intended 409, even though the identical scenario correctly
+      returned 409 against PostgreSQL. This is exactly the kind of
+      dialect-specific gap governance/DEFINITION_OF_DONE.md's dual-backend
+      testing principle exists to catch.
+    """
+    message = str(exc.orig)
+    return "ux_employment_one_primary_current_per_person" in message or "employment.person_id" in message
+
+
 async def create_employment(db: AsyncSession, person: Person, payload: EmploymentCreate) -> Employment:
     employer = await upsert_taxonomy(
         db, Employer, name_field="name", normalized_field="normalized_name", name=payload.employer_name
@@ -48,7 +74,7 @@ async def create_employment(db: AsyncSession, person: Person, payload: Employmen
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
-        if "ux_employment_one_primary_current_per_person" in str(exc.orig):
+        if _is_primary_current_conflict(exc):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Person already has a primary (full-time/part-time) current employment. "
@@ -138,7 +164,7 @@ async def promote_employment(
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
-        if "ux_employment_one_primary_current_per_person" in str(exc.orig):
+        if _is_primary_current_conflict(exc):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Person already has a different primary current employment.",

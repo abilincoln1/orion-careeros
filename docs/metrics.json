@@ -1,18 +1,18 @@
 {
   "code_coverage": {
-    "percent_covered": 83.76
+    "percent_covered": 96.01
   },
   "cyclomatic_complexity": {
-    "average": 1.77,
+    "average": 1.52,
     "max": 7,
-    "count": 47
+    "count": 209
   },
   "dependencies": {
     "backend_python": 17,
     "frontend_npm": 7
   },
-  "migration_count": 1,
-  "api_endpoint_count": 4,
+  "migration_count": 2,
+  "api_endpoint_count": 25,
   "docker_image_size_mb": null,
   "security_findings": {
     "vulnerabilities_found": 22,
@@ -72,16 +72,16 @@
     ]
   },
   "technical_debt": {
-    "open": 11,
-    "resolved": 7
+    "open": 13,
+    "resolved": 11
   },
   "architecture_compliance": {
     "kernel_imports_product_code": [],
     "compliant": true
   },
   "lines_of_code": {
-    "backend_app": 475,
+    "backend_app": 2830,
     "kernel": 425,
-    "tests": 193
+    "tests": 1064
   }
 }

@@ -8,6 +8,7 @@ logging, database, auth framework, health monitoring, and the API router.
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -64,9 +65,19 @@ async def http_exception_handler(request, exc: StarletteHTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc: RequestValidationError):
+    # exc.errors() is not directly JSON-serializable: Pydantic v2 includes a
+    # 'ctx' dict on each error that can hold the raw Python exception object
+    # (e.g. the ValueError raised by a @field_validator), which json.dumps
+    # cannot encode. Found via Sprint 1.6 API testing: any custom validator
+    # that raises ValueError (e.g. EmploymentCreate.end_after_start) crashed
+    # this handler with an unhandled 500 instead of returning the intended
+    # 422, because JSONResponse.render() calls json.dumps() directly with no
+    # custom encoder. jsonable_encoder recursively converts exc.errors() into
+    # plain JSON-safe types (it stringifies non-serializable objects like the
+    # embedded ValueError) before handing off to JSONResponse.
     return JSONResponse(
         status_code=422,
-        content={"error": {"code": 422, "message": "Validation error", "details": exc.errors()}},
+        content={"error": {"code": 422, "message": "Validation error", "details": jsonable_encoder(exc.errors())}},
     )
 
 

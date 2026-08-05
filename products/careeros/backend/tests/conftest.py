@@ -21,6 +21,7 @@ from typing import AsyncGenerator
 
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool, StaticPool
 
@@ -36,6 +37,29 @@ if _IS_SQLITE:
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
+
+    # SQLite does NOT enforce FOREIGN KEY constraints -- including
+    # ON DELETE CASCADE -- unless "PRAGMA foreign_keys = ON" is executed on
+    # every connection. Without this, every ondelete="CASCADE" relationship
+    # in the Career DNA schema (Evidence -> EvidenceLink, Person -> *, etc.)
+    # silently does nothing under the SQLite test backend: rows that should
+    # be cascade-deleted are left behind as orphans instead. This was found
+    # via a real failing test during Sprint 1.6 (deleting Evidence did not
+    # actually remove its EvidenceLink rows, so attribution_source recompute
+    # saw a stale link and incorrectly stayed "verified" instead of
+    # demoting to "inferred"). The application's cascade configuration
+    # itself is correct; this was a test-infrastructure gap that meant the
+    # fast SQLite test path could never have caught a cascade regression,
+    # even though the identical scenario would behave correctly against
+    # PostgreSQL (which enforces FKs by default). Registered on the sync
+    # DBAPI connection via the aiosqlite dialect's underlying sqlite3
+    # connection, per SQLAlchemy's documented pattern for this exact issue.
+    @event.listens_for(test_engine.sync_engine, "connect")
+    def _enable_sqlite_foreign_keys(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
 else:
     # Real Postgres (or any non-SQLite dialect): no SQLite-only connect_args/pool.
     test_engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)

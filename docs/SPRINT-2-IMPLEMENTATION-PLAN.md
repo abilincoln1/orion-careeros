@@ -1,5 +1,20 @@
 # Sprint 2 Implementation Plan -- Career DNA Service (Planning Only)
 
+> **Superseded (added 2026-08-05, Sprint 1.6):** the "Status: NOT
+> AUTHORISED" line below and this plan's 4-entity scope (Skill,
+> Experience, Project, Technology) do not reflect what was actually
+> built. A separate, more detailed specification
+> (`docs/CAREER_DNA_MODEL_SPEC.md`) and independent architecture review
+> (`docs/SPRINT-2-ARCHITECTURE-REVIEW.md`) governed the real
+> implementation: 24 entities including Person, Employment/Role,
+> Competency, and Evidence -- a materially different and larger design.
+> That implementation has since been reviewed (Sprint 1.6 Candidate
+> Acceptance Review) and accepted as the Sprint 2 baseline, with its
+> architecture formally recorded in `docs/adr/0004-career-dna-domain-model.md`.
+> This document's scope and status are historical only; left unedited
+> below per this project's convention of not rewriting historical
+> records.
+
 **Status: NOT AUTHORISED.** This document is planning only, produced as
 part of Sprint 1 Closure Task 10. No Sprint 2 code, migrations, or
 business logic has been implemented. Implementation may not begin until
