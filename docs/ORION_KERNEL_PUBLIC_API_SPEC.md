@@ -85,7 +85,7 @@ needed).
 | `create_access_token(subject, settings)` | **Public** | |
 | `create_refresh_token(subject, settings)` | **Public** | |
 | `decode_token(token, settings)` | **Public** | |
-| `pwd_context` (module-level `CryptContext` instance) | **Internal** | An implementation detail of `hash_password`/`verify_password`. Importing it directly would let a product bypass the kernel's password-hashing policy (e.g. its configured schemes) -- exactly the kind of platform/product boundary erosion `governance/ARCHITECTURE_PRINCIPLES.md` warns about. |
+| `pwd_context` (module-level `CryptContext` instance) | **Internal** | An implementation detail of `hash_password`/`verify_password`. Importing it directly would let a product bypass the kernel's password-hashing policy (e.g. its configured schemes) -- exactly the kind of platform/product boundary erosion `orion-governance/architecture/ArchitecturePrinciples.md` warns about. |
 | `_create_token(...)` | **Internal** (name-enforced) | Leading underscore -- Python convention for "not part of the public interface," backing both `create_access_token` and `create_refresh_token`. |
 
 ---

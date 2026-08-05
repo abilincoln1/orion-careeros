@@ -26,7 +26,7 @@ python3 scripts/metrics/collect_metrics.py
 | Docker image size | `docker image ls` after `docker compose build` | **Not measured in this environment** -- no Docker daemon available. Must be captured by the user after their first `docker compose up --build`. |
 | Security findings | `pip-audit` against a frozen, `-e`-line-stripped copy of `requirements.txt` | Avoids pip-audit trying (and failing) to resolve the local editable kernel path; reflects CareerOS's actual pinned dependencies rather than the whole shared build environment. |
 | Technical debt | Regex count of `TD-\d+` (open) vs `TD-R\d+` (resolved) rows in `docs/TechnicalDebt.md` | Keeps the debt count honest and mechanically derived rather than hand-maintained separately. |
-| Architecture compliance | Static check: no file under `platform/kernel/orion_kernel` may contain `from app` / `import app` | A cheap, real enforcement of `governance/ARCHITECTURE_PRINCIPLES.md` principle 1 (kernel never depends on product code). |
+| Architecture compliance | Static check: no file under `platform/kernel/orion_kernel` may contain `from app` / `import app` | A cheap, real enforcement of `orion-governance/architecture/ArchitecturePrinciples.md` principle 1 (kernel never depends on product code). |
 
 ## Sprint 1 Closure baseline (captured this session)
 

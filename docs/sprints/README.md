@@ -19,7 +19,7 @@ directory existed and live at the top level of `docs/` instead:
 
 They were **not moved** here during the Project Baseline pass (2026-08-05)
 because at least 32 cross-references to their current paths exist across
-`README.md`, `governance/`, and other `docs/` files. Moving them would
+`README.md`, `orion-governance/`, and other `docs/` files. Moving them would
 have required rewriting every cross-reference as a side effect of a
 baseline/hygiene task, which risked silently breaking documentation
 integrity. This is a deliberate, documented deviation from the letter of

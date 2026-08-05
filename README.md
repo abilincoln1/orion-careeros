@@ -43,17 +43,30 @@ project -- see `docs/REPOSITORY_INDEPENDENCE_REPORT.md`.
   /shared_services      Reserved, documented, not implemented
   /shared_libraries     Reserved, documented, not implemented
   /shared_connectors    Reserved, documented, not implemented
+/orion-governance     ORION-wide (not product-specific) engineering governance -- see
+                        orion-governance/README.md. Introduced Sprint 3; supersedes the
+                        former top-level /governance, whose contents were migrated here.
+                        NOTE: the target repository shape in Sprint 3's directive also
+                        specifies a top-level /shared, which this restructure did NOT
+                        create -- /platform/shared_services, /shared_libraries, and
+                        /shared_connectors remain where they were (see
+                        docs/SPRINT-3-PROJECT-STATE-ASSESSMENT.md for why this specific
+                        move was deferred pending explicit confirmation rather than
+                        assumed).
 /products
   /careeros
     /backend            FastAPI application (consumes orion_kernel), Alembic migrations, pytest suite
     /frontend           React + TypeScript + Vite shell (consumes the backend API)
-/governance           Engineering Constitution, architecture/process/quality standards
 /docs                 Architecture, API reference, ADRs, reports, registers, metrics
+                        (product/platform-specific; reusable governance now lives in
+                        /orion-governance instead)
 /scripts              bootstrap.ps1 (one-command onboarding) + Unix dev-convenience scripts
 /config               Non-secret domain configuration (example/future shape)
-/prompts              Reserved for AI prompt templates (future sprints)
+/prompts              Chief Architect directives, version-controlled per Sprint 1.6's
+                        closing recommendation, and other AI prompt templates
 /tests                Reserved for cross-product/integration tests (future sprints)
 /data                 Reserved for local data artifacts (future sprints, gitignored)
+
 ```
 
 `/prompts`, `/tests`, and `/data` are intentionally empty placeholders
@@ -176,7 +189,7 @@ standards every change is expected to follow: `ARCHITECTURE_PRINCIPLES.md`,
 - `docs/DEVELOPER_GUIDE.md` -- day-to-day dev workflows, troubleshooting, port-collision handling
 - `docs/platform/PLATFORM_KERNEL.md` -- Platform Kernel responsibilities (implemented vs. documented)
 - `docs/API.md` -- CareerOS Sprint 1 API surface
-- `docs/adr/` -- architecture decision records (see `governance/ADR_INDEX.md`)
+- `docs/adr/` -- architecture decision records (see `orion-governance/architecture/ADR_INDEX.md`)
 - `docs/SPRINT-1-REVIEW.md` -- Sprint 1 engineering review
 - `docs/SPRINT-1-ACCEPTANCE-REPORT.md` -- Sprint 1 Closure acceptance report (Postgres/Docker verification, governance, registers, metrics, repository review)
 - `docs/REPOSITORY_INDEPENDENCE_REPORT.md` -- confirms no dependency on sibling projects (e.g. NDIP)

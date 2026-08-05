@@ -100,14 +100,14 @@ migration after changing a model.
   otherwise.
 
 ## Coding standards
-See `governance/CODING_STANDARDS.md` and `governance/DEFINITION_OF_DONE.md`
+See `orion-governance/governance/CodingStandards.md` and `orion-governance/engineering/DefinitionOfDone.md`
 for the full list. The two most load-bearing rules in practice:
 
 - Nothing is hardcoded that should be configuration -- if you're tempted
   to hardcode a value, it probably belongs in `Settings`
   (`platform/kernel/orion_kernel/config.py` or the product's subclass).
 - Every "done" claim needs a command that was actually run and its output
-  actually read, per `governance/DEFINITION_OF_DONE.md` -- this project's
+  actually read, per `orion-governance/engineering/DefinitionOfDone.md` -- this project's
   history (see `docs/TechnicalDebt.md`'s "Resolved" table) has repeatedly
   found real bugs specifically because verification was insisted on
   rather than assumed.

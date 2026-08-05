@@ -1,0 +1,61 @@
+flowchart TD
+    subgraph Sprint2["Career DNA (Sprint 2, accepted, v0.2.0-sprint2)"]
+        Person[Person / CareerProfile]
+        Employment[Employer / Employment / Role]
+        Skill[Skill / PersonSkill / Competency]
+        Evidence[Evidence / EvidenceLink]
+    end
+
+    subgraph CVI["CV Intelligence (Sprint 3, design only)"]
+        CVDoc[CVDocument]
+        CVRun[CVExtractionRun]
+        Extractor[Extraction Service]
+    end
+
+    subgraph JI["Job Intelligence (Sprint 3, design only)"]
+        Providers["Provider Clients\n(Reed / TotalJobs / CV-Library / JobServe / Indeed)"]
+        JobListing[JobListing]
+        JobSkill[JobListingSkill / JobListingTechnology]
+    end
+
+    subgraph ME["Matching Engine (Sprint 3, design only)"]
+        MatchResult[MatchResult]
+        MatchComponent[MatchScoreComponent]
+    end
+
+    subgraph RW["Recruiter Watchlist (Sprint 3, design only)"]
+        Recruiter[Recruiter / Agency]
+        Contact[RecruiterContact]
+    end
+
+    subgraph IP["Interview Pipeline (Sprint 3, design only)"]
+        Application[Application]
+        InterviewEvent[InterviewEvent]
+    end
+
+    CVDoc --> Extractor
+    Extractor -->|"writes via EXISTING\nSprint 2 service functions only"| Skill
+    Extractor -->|"writes via EXISTING\nSprint 2 service functions only"| Employment
+    CVRun --> CVDoc
+
+    Providers --> JobListing
+    JobListing --> Extractor
+    Extractor --> JobSkill
+
+    Person --> MatchResult
+    Skill --> MatchResult
+    Employment --> MatchResult
+    JobListing --> MatchResult
+    MatchResult --> MatchComponent
+
+    Application --> JobListing
+    Application --> Recruiter
+    Application --> InterviewEvent
+    Recruiter --> Contact
+
+    style Sprint2 fill:#e8f5e9,stroke:#2e7d32
+    style CVI fill:#e3f2fd,stroke:#1565c0
+    style JI fill:#e3f2fd,stroke:#1565c0
+    style ME fill:#e3f2fd,stroke:#1565c0
+    style RW fill:#e3f2fd,stroke:#1565c0
+    style IP fill:#e3f2fd,stroke:#1565c0

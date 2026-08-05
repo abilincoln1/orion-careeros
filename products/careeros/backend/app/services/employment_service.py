@@ -47,7 +47,7 @@ def _is_primary_current_conflict(exc: IntegrityError) -> bool:
       letting the raw IntegrityError escape as an unhandled 500 instead of
       the intended 409, even though the identical scenario correctly
       returned 409 against PostgreSQL. This is exactly the kind of
-      dialect-specific gap governance/DEFINITION_OF_DONE.md's dual-backend
+      dialect-specific gap orion-governance/engineering/DefinitionOfDone.md's dual-backend
       testing principle exists to catch.
     """
     message = str(exc.orig)
