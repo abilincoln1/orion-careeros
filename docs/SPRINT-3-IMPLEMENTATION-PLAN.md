@@ -13,7 +13,7 @@ Each component below is independently implementable once its design is
 approved, but this order minimizes rework: later components depend on
 earlier ones' actual (not just designed) schemas.
 
-1. **CV Intelligence** -- no dependency on Job Intelligence; can start
+1. **Document Intelligence Engine** -- no dependency on Job Intelligence; can start
    first once Open Question 1 (file storage) and Open Question 3
    (attribution_source) are resolved.
 2. **Job Intelligence** -- provider interface + at least one real
@@ -78,7 +78,7 @@ DefinitionOfDone.md`.
 2. Phase 6 independent architecture review (per the directive) --
    produces a `SPRINT-3-ARCHITECTURE-REVIEW.md` in the same shape as
    `docs/SPRINT-2-ARCHITECTURE-REVIEW.md`.
-3. CV Intelligence: `CVDocument` + `CVExtractionRun` models/migrations/
+3. Document Intelligence Engine: `Document` + `DocumentExtractionRun` models/migrations/
    tests, extraction service, integration with existing Career DNA
    write paths.
 4. Job Intelligence: `JobProvider`/`JobListing`/association models,

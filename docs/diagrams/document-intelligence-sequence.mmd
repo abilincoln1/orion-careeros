@@ -1,0 +1,42 @@
+sequenceDiagram
+    actor User
+    participant API as CareerOS API
+    participant Storage as StorageAdapter
+    participant Engine as Document Intelligence Engine (kernel)
+    participant Provider as DocumentExtractionProvider
+    participant DI as document_intelligence_service (CareerOS)
+    participant CDNA as Career DNA services (person/employment/skill_service)
+
+    User->>API: POST /documents (upload PDF/DOCX)
+    API->>Storage: store(person_id, filename, content)
+    Storage-->>API: storage_ref
+    API->>API: create Document(status=pending)
+    API-->>User: Document (status=pending)
+
+    User->>API: POST /documents/{id}/extract
+    API->>Storage: retrieve(storage_ref)
+    Storage-->>API: raw bytes
+    API->>Engine: extract_text(document_type, bytes)
+    Engine-->>API: plain text
+    API->>Provider: analyze(document_type, text)
+    Provider-->>API: ExtractionResult (with per-field confidence)
+    API->>API: create DocumentExtractionRun(raw_extraction_json=...)
+    API-->>User: DocumentExtractionRun (status=completed)
+
+    User->>API: GET /documents/{id}/runs/{run_id}
+    API-->>User: ExtractionResult (for review)
+
+    Note over User,API: Human review happens here -- nothing<br/>written to Career DNA yet
+
+    User->>API: POST /documents/{id}/runs/{run_id}/apply
+    API->>DI: apply(extraction_result)
+    loop for each ExtractedEmployment
+        DI->>CDNA: employment_service.create_employment(..., attribution_source=AI_EXTRACTED)
+    end
+    loop for each ExtractedSkill
+        DI->>CDNA: skill_service.add_person_skill(..., attribution_source=AI_EXTRACTED)
+    end
+    CDNA-->>DI: created records (dedup/ownership/validation enforced automatically)
+    DI-->>API: applied summary
+    API->>API: DocumentExtractionRun.applied_at = now()
+    API-->>User: applied confirmation

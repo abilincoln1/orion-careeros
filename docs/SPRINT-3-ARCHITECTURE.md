@@ -63,6 +63,18 @@ ADR 0004, with `UUIDPrimaryKeyMixin`/`TimestampMixin` reused, not
 reinvented.
 
 ### CV Intelligence
+
+> **Superseded (added post-Phase-6, Chief Architect redirect):** this
+> section, and the related items in Section 9, are superseded by
+> `docs/DOCUMENT-INTELLIGENCE-ARCHITECTURE.md` and
+> `docs/adr/0006-document-intelligence-engine.md`. The Chief Architect
+> redirected this capability from a CareerOS-local "CV Intelligence"
+> parser to a genuine Platform Kernel "Document Intelligence Engine,"
+> reusable by future ORION products and extensible to document types
+> beyond CVs. Left below unedited, per this project's convention of
+> superseding rather than silently rewriting already-independently-
+> reviewed design documents (this section was itself part of what
+> `docs/SPRINT-3-ARCHITECTURE-REVIEW.md` approved with conditions).
 - **CVDocument**: `id`, `person_id`, `original_filename`, `storage_ref`
   (opaque string, meaningful only to the `StorageAdapter` implementation
   in use -- never parsed or interpreted outside it), `mime_type`,
