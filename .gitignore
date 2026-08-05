@@ -26,3 +26,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+build_log.txt
+orion-careeros/
