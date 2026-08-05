@@ -13,6 +13,47 @@ class AttributionSource(str, enum.Enum):
     SELF_REPORTED = "self_reported"
     INFERRED = "inferred"
     VERIFIED = "verified"
+    # Added Sprint 3 Stage 1 (ADR 0005 Decision 3, ADR 0006), for the
+    # Document Intelligence Engine. NOT a rename of SELF_REPORTED/
+    # INFERRED: those two are load-bearing for existing, accepted,
+    # tagged (v0.2.0-sprint2) evidence-linking logic in
+    # evidence_service.py, which explicitly demotes VERIFIED ->
+    # INFERRED (never to SELF_REPORTED) when the last EvidenceLink is
+    # removed -- there is no value in the Chief Architect's approved
+    # provenance list (USER_ENTERED/AI_EXTRACTED/IMPORTED/VERIFIED)
+    # that plays INFERRED's role, and renaming SELF_REPORTED to
+    # USER_ENTERED would be a breaking, unreviewed change to Sprint 2's
+    # accepted schema. Filed as TD-022 pending Chief Architect
+    # confirmation of how (or whether) to reconcile the two sets rather
+    # than silently deciding either way -- see docs/TechnicalDebt.md.
+    AI_EXTRACTED = "ai_extracted"
+    IMPORTED = "imported"
+
+
+class DocumentType(str, enum.Enum):
+    """Stage 1 supports exactly two; extended by migration when a new
+    document type (cover letter, certificate, etc.) is authorized --
+    see docs/DOCUMENT-INTELLIGENCE-ARCHITECTURE.md Section 2."""
+    PDF = "pdf"
+    DOCX = "docx"
+
+
+class DocumentStatus(str, enum.Enum):
+    """The Chief Architect's approved Document Lifecycle, exactly as
+    specified: Uploaded -> Extracted -> Validated -> Imported ->
+    Archived. Distinct from DocumentExtractionRunStatus, which tracks
+    an individual extraction attempt, not the document as a whole."""
+    UPLOADED = "uploaded"
+    EXTRACTED = "extracted"
+    VALIDATED = "validated"
+    IMPORTED = "imported"
+    ARCHIVED = "archived"
+
+
+class DocumentExtractionRunStatus(str, enum.Enum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
 
 class ProficiencyLevel(str, enum.Enum):

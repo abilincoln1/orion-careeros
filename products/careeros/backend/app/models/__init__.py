@@ -31,3 +31,7 @@ from app.models.preferences import (  # noqa: F401
     SalaryPreference,
     WorkPreference,
 )
+
+# Document Intelligence Engine (Sprint 3 Stage 1) -- see
+# docs/DOCUMENT-INTELLIGENCE-ARCHITECTURE.md and ADR 0006.
+from app.models.document import Document, DocumentExtractionRun, DocumentVersion  # noqa: F401

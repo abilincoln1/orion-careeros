@@ -31,5 +31,10 @@ class Settings(OrionBaseSettings):
     # shape it will take, and docs/platform/PLATFORM_KERNEL.md for how it
     # relates to platform-level configuration.
 
+    # Document Intelligence Engine (Sprint 3 Stage 1). Local-filesystem
+    # storage only -- ADR 0005 Decision 1 explicitly deferred a shared
+    # Platform File Storage capability until a second product needs one.
+    DOCUMENT_STORAGE_PATH: str = "/app/data/document_storage"
+
 
 get_settings = make_settings_getter(Settings)

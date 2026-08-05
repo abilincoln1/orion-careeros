@@ -77,3 +77,36 @@ async def get_current_person(
     from app.services.person_service import get_person_or_404
 
     return await get_person_or_404(db, current_user.id)
+
+
+def get_storage_adapter():
+    """
+    Returns the configured StorageAdapter -- LocalStorageAdapter for
+    Stage 1 (ADR 0005 Decision 1). Not cached at module level as a
+    singleton, since LocalStorageAdapter's __init__ just ensures the
+    directory exists (cheap, idempotent) -- a real future StorageAdapter
+    with a connection pool would warrant caching this the same way
+    get_settings() is cached, but that's speculative for a filesystem
+    adapter.
+    """
+    from orion_kernel.document_intelligence import LocalStorageAdapter
+
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    return LocalStorageAdapter(settings.DOCUMENT_STORAGE_PATH)
+
+
+def get_extraction_provider():
+    """
+    Returns the configured DocumentExtractionProvider. Stage 1: always
+    MockDocumentExtractionProvider, per the Chief Architect's explicit
+    AI Provider Policy -- "no production LLM provider should be
+    introduced until the interface is proven." This is the ONE place
+    that will change when a real provider is authorized; every caller
+    depends on the DocumentExtractionProvider protocol, not this
+    specific class.
+    """
+    from orion_kernel.document_intelligence import MockDocumentExtractionProvider
+
+    return MockDocumentExtractionProvider(fixture="clean")
