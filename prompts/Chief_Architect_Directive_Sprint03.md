@@ -405,3 +405,80 @@ Sprint 3 Foundation is successful when:
 * CareerOS is ready for Sprint 3 implementation with a stable, governed foundation.
 
 **Do not begin Sprint 3 feature implementation until the architecture, governance migration, and design deliverables have been completed and approved.**
+
+---
+
+# AMENDMENT -- Version 1.1 (Final)
+
+**Re:** Sprint 3 -- Phase 6 Approval & Implementation Authorisation
+**Date:** 05 August 2026
+
+*Filed as an amendment to this same directive, not a separate file,*
+*since it is explicitly versioned "v1.1" of the Sprint 3 lineage above,*
+*not a new sprint number. See `docs/SPRINT-3-PROJECT-STATE-ASSESSMENT.md`*
+*and `docs/SPRINT-3-ARCHITECTURE-REVIEW.md` for the work this amendment*
+*authorized and reviewed.*
+
+## Executive Decision
+
+The Sprint 3 Phase 0-6 Closure Report has been reviewed.
+
+The Architecture Review Board concludes that the governance work has been completed to a high standard and that the repository has reached an appropriate level of maturity.
+
+The establishment of `/orion-governance` is approved as a permanent part of the ORION Platform architecture.
+
+This directory shall remain the canonical location for reusable governance, standards, templates, checklists, ADRs, and engineering processes for all present and future ORION products.
+
+CareerOS is designated as the first consumer of the ORION Governance Framework.
+
+## Phase 6 Independent Architecture Review
+
+Authorisation is granted to perform an independent Phase 6 Architecture Review.
+
+The review must be conducted as if evaluating a third-party pull request. Do not defend previous implementation choices. Challenge assumptions. Attempt to identify architectural weaknesses.
+
+Evaluate: Domain boundaries, Service boundaries, Provider abstraction, Database design, Kernel responsibilities, Product responsibilities, Future extensibility, Maintainability, Testability, AI-readiness.
+
+Produce one recommendation: Approve / Approve with Conditions / Reject. Support every recommendation with evidence. No implementation work is to begin until this review is complete.
+
+## Architectural Decisions
+
+### Decision 1 -- File Storage
+Implement a CareerOS-local File Storage Adapter. Do not build a Platform Kernel File Storage capability at this stage. ORION currently has only one production consumer; a platform service should not be created until at least two products demonstrate the same requirement. Design the storage layer behind an interface so migration to a shared Platform File Storage service can occur later without changing business logic.
+
+### Decision 2 -- Job Provider Scheduling
+Implement scheduling as a reusable Platform capability. Recurring ingestion is fundamental infrastructure rather than CareerOS-specific business logic and is likely to be reused by future ORION products. Design it as a scheduler service with provider-independent interfaces.
+
+### Decision 3 -- AI Attribution
+Introduce a new attribution source. Current values should distinguish between: user entered; AI extracted from user documents; imported from external systems; verified manually. Do not classify AI-extracted information as self-reported. The provenance of information is part of the product's trust model, and future AI reasoning depends upon accurate provenance.
+
+### Decision 4 -- Job Listing Lifecycle
+Adopt soft deletion. Inactive listings shall be marked expired. Never destroy historical records referenced by match results, applications, recruiter interactions, or analytics. Historical integrity is more valuable than aggressive cleanup.
+
+### Decision 5 -- `/shared` Repository Structure
+Do not perform the restructure during Sprint 3. Close TD-018 as Deferred by Architecture Decision. The current structure is internally consistent and the proposed change offers little functional benefit; repository stability is preferable to cosmetic restructuring. Revisit only if a second ORION product requires broader shared libraries.
+
+## Sprint 3 Implementation Authorisation
+
+Upon successful completion of the independent Phase 6 review, implementation of Sprint 3 is authorised, proceeding incrementally: Stage 1 CV Intelligence, Stage 2 Job Provider Framework, Stage 3 Matching Engine, Stage 4 Recruiter Watchlist, Stage 5 Interview Pipeline. No stage may begin until the previous stage satisfies the ORION Definition of Done.
+
+## Permanent Engineering Standard
+
+`/orion-governance` is now part of the permanent ORION architecture, containing reusable engineering governance for every ORION product, evolving independently of any individual product. Products inherit governance from ORION; they do not own it.
+
+## Sprint Directives
+
+Effective immediately, every Chief Architect directive shall be version-controlled and stored within `/prompts/`, named `Chief_Architect_Directive_SprintNN.md`, becoming part of the permanent engineering record.
+
+## Deliverables (this amendment)
+
+1. Independent Phase 6 Architecture Review Report.
+2. Updated Technical Debt Register reflecting the architecture decisions above.
+3. Updated Risk Register where required.
+4. ADR documenting the five architecture decisions.
+5. Confirmation that `/orion-governance` is fully integrated into the repository.
+6. Save this directive as `prompts/Chief_Architect_Directive_Sprint03.md`.
+
+## Final Authorisation
+
+Once the Independent Phase 6 Architecture Review has been completed and the deliverables above have been accepted, Sprint 3 implementation is authorised. The first implementation work shall be CV Intelligence, using the accepted Sprint 2 Career DNA model as the sole write path, preserving all existing domain invariants and maintaining full compliance with the ORION Governance Framework.

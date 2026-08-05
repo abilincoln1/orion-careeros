@@ -64,11 +64,30 @@ reinvented.
 
 ### CV Intelligence
 - **CVDocument**: `id`, `person_id`, `original_filename`, `storage_ref`
-  (not the raw bytes -- see `platform/shared_services` File Storage
-  capability, currently reserved/not implemented; this service is
-  blocked on that or an interim local-storage shim, see Open Question 1
-  below), `mime_type`, `uploaded_at`, `status`
+  (opaque string, meaningful only to the `StorageAdapter` implementation
+  in use -- never parsed or interpreted outside it), `mime_type`,
+  `uploaded_at`, `status`
   (`pending` / `processed` / `failed`), `error_detail`.
+
+  **Storage abstraction, per Chief Architect Decision 1:** a
+  `StorageAdapter` interface, not a bare field:
+  ```python
+  class StorageAdapter(Protocol):
+      async def store(self, person_id: uuid.UUID, filename: str, content: bytes) -> str:
+          """Returns the opaque storage_ref to persist on CVDocument."""
+
+      async def retrieve(self, storage_ref: str) -> bytes: ...
+
+      async def delete(self, storage_ref: str) -> None: ...
+  ```
+  Sprint 3 implements exactly one `StorageAdapter`: a CareerOS-local
+  filesystem (or local-object-store) implementation, per Decision 1's
+  explicit instruction not to build a Platform Kernel File Storage
+  capability yet. The interface itself is what makes a later migration
+  to a shared Platform capability a swap of the adapter, not a rewrite
+  of CV Intelligence -- this was the whole point of Decision 1's
+  "design behind an interface" instruction, and the original design
+  omitted it; this is the independent Phase 6 review's Must-fix #1.
 - **CVExtractionRun**: `id`, `cv_document_id`, `started_at`,
   `completed_at`, `model_used` (which extraction model/version, for
   reproducibility and future re-extraction), `extraction_confidence`
@@ -79,8 +98,15 @@ reinvented.
 ### Job Intelligence
 - **JobProvider**: `id`, `name` (e.g. "reed", "totaljobs"),
   `provider_type` (`api` / `rss` / `manual_import`), `is_active`,
-  `credentials_ref` (pointer to a secret, never the secret itself in
-  this table).
+  `credentials_ref` (an opaque string identifying an entry in the
+  runtime environment's secret store -- for Sprint 3, this means an
+  environment-variable name, e.g. `"REED_API_KEY"`, resolved at request
+  time by the provider client, never persisted in the database or
+  logged. This is intentionally the simplest mechanism that satisfies
+  "never the secret itself in this table"; migrating to a real secrets
+  manager later only changes how `credentials_ref` is resolved, not its
+  meaning. Independent Phase 6 review Must-fix #4: the original design
+  left this undefined.).
 - **JobListing**: `id`, `provider_id`, `provider_external_id` (the
   listing's ID in the source system, unique per provider -- this is the
   actual dedup key, not job title/company matching), `title`,
@@ -125,11 +151,28 @@ reinvented.
   Intelligence, e.g. a direct application), `recruiter_id` (nullable),
   `status` (enum, the exact workflow from the directive: `applied` /
   `recruiter_contact` / `interview_1` / `interview_2` / `technical` /
-  `offer` / `accepted` / `rejected`), `status_changed_at`,
-  `status_history_json` (append-only log of every transition with
-  timestamp -- required for the dashboard/reporting requirement; a
-  single `status` column alone cannot answer "how long did each stage
-  take").
+  `offer` / `accepted` / `rejected`), `status_changed_at`.
+
+  **Status history, per independent Phase 6 review Must-fix #2:** the
+  original design used a `status_history_json` blob on `Application`
+  for the dashboard/reporting requirement. This directly contradicts
+  this project's own established principle from ADR 0004 Decision 3 --
+  "history is preserved as new records, not overwritten or embedded in
+  a mutable blob" -- the exact defect the Employment-promotion-chaining
+  fix (must-fix #1 in Sprint 2's own review) corrected. A JSON blob is
+  also unindexed and unqueryable at the database level, and this
+  project has already been bitten once by JSON-serialization edge cases
+  (TD-R10, the validation-handler crash). Corrected design: a separate
+  **ApplicationStatusTransition** table instead:
+  - **ApplicationStatusTransition**: `id`, `application_id`,
+    `from_status` (nullable, null for the initial `applied` row),
+    `to_status`, `occurred_at`, `notes` (optional). `Application.status`
+    remains as a denormalized "current state" column for fast reads
+    (updated in the same transaction as the new transition row is
+    inserted -- never edited independently of one), but the
+    authoritative history is this table, queryable like any other data
+    ("average time in `interview_1`" becomes a real aggregate query, not
+    a JSON-parsing exercise).
 - **InterviewEvent**: `id`, `application_id`, `stage` (mirrors the
   `Application.status` enum values that represent actual interview
   stages), `scheduled_at`, `completed_at`, `notes`, `outcome`
@@ -147,10 +190,11 @@ class JobProviderClient(Protocol):
     async def fetch_listings(
         self, since: datetime | None, cursor: str | None
     ) -> ProviderFetchResult:
-        """Returns a page of raw listings plus a cursor for the next
-        page, or None if this page is the last. Providers using RSS
-        return the same shape -- 'cursor' may just be a timestamp for
-        RSS providers with no real pagination token."""
+        """Returns one page of listings. See ProviderFetchResult below --
+        independent Phase 6 review Must-fix #3: the original design
+        referenced this type without defining it, and left the
+        RSS-vs-API pagination question as an unresolved footnote instead
+        of a real contract."""
 
     def normalize(self, raw_listing: dict) -> JobListingCreate:
         """Maps this provider's raw shape onto the provider-agnostic
@@ -163,7 +207,35 @@ class JobProviderClient(Protocol):
         """Used by an operational dashboard to show which providers are
         currently reachable, independent of the last successful ingest
         time."""
+
+
+@dataclass
+class ProviderFetchResult:
+    raw_listings: list[dict]
+    next_cursor: str | None
+    """None means this page is the last -- true for both an
+    exhausted API pagination sequence AND a fully-read RSS feed. There
+    is exactly one exhaustion signal, not two, so calling code never
+    needs to know which kind of provider it's talking to."""
+
+    @property
+    def is_exhausted(self) -> bool:
+        return self.next_cursor is None
+
+
+# Pagination contract, resolved explicitly (was previously left
+# ambiguous -- see above):
+# - API-style providers: cursor is that API's real pagination token.
+# - RSS-style providers: cursor is the ISO timestamp of the newest
+#   item processed so far. On the next call, an RSS provider filters
+#   out anything at or before that timestamp and returns next_cursor as
+#   the new newest timestamp, or None once nothing newer than `since`
+#   remains in the feed. This means RSS providers implement genuine
+#   (if coarse) pagination against the interface, rather than a special
+#   case -- callers never branch on provider_type to decide how to call
+#   fetch_listings.
 ```
+
 
 **Explicit constraint, per the directive:** an implementation may only
 use a provider's official API, an RSS feed the provider explicitly
@@ -250,48 +322,73 @@ A transparent, explainable model, not a black-box score:
    overwriting history -- the same "don't overwrite, create a new
    record" principle ADR 0004 established for Employment promotions.
 
-## 7. Open questions requiring Chief Architect input before Phase 6 review can close
+## 7. Architectural decisions (resolved by Chief Architect Directive, Sprint 3 v1.1)
 
-Per the directive's working principle "raise uncertainties instead of
-making assumptions," these are named explicitly rather than resolved by
-guessing:
+The four open questions originally posed here are resolved. Full
+reasoning is recorded in **ADR 0005**; summarized here for this
+document's own completeness:
 
-1. **File storage for CVDocument.** `platform/shared_services` lists a
-   File Storage capability as reserved/not implemented. CV Intelligence
-   needs *somewhere* to store uploaded CVs. Options: (a) implement a
-   minimal File Storage kernel capability now, ahead of its originally
-   planned sprint, or (b) an interim CareerOS-local storage shim, later
-   migrated. Recommend (a) if any other near-term product need exists,
-   otherwise (b) to avoid speculative platform work (per
-   `ArchitecturePrinciples.md` principle 7).
-2. **Scheduling for provider ingestion.** Same situation --
-   `shared_services` Scheduling is reserved/not implemented. A cron-like
-   mechanism is needed. Recommend using this as the actual trigger to
-   implement the Scheduling kernel capability, since (unlike File
-   Storage) there's no reasonable CareerOS-local substitute for
-   recurring background jobs that wouldn't itself become throwaway code.
-3. **CV-extracted skill attribution_source.** Should AI-extracted (not
-   user-typed, not evidence-linked) data use the existing
-   `self_reported` value, or does this sprint need a fourth
-   `AttributionSource` value (e.g. `ai_extracted`) to distinguish "the
-   user typed this" from "AI read this off a CV the user uploaded"?
-   This is a real product-truth question, not just a technical one --
-   recommend Chief Architect + a product decision, not an engineering
-   default.
-4. **JobListing lifecycle.** Hard delete vs. soft-delete/expiry when a
-   provider stops returning a listing. Recommend soft-delete
-   (`expires_at`/`is_active`) to preserve historical `MatchResult` data,
-   but flagging for explicit confirmation since it has real storage-growth
-   implications at scale.
+1. **File storage for CVDocument** -- CareerOS-local `StorageAdapter`
+   (Section on CVDocument above), not a Platform Kernel capability, per
+   Decision 1. Interface designed so a later migration is an adapter
+   swap, not a rewrite.
+2. **Scheduling for provider ingestion** -- built as a reusable Platform
+   Kernel capability, per Decision 2, since recurring ingestion is
+   infrastructure, not CareerOS-specific logic.
+3. **CV-extracted attribution** -- a fourth (in fact, per Decision 3, a
+   broader) set of `AttributionSource` values is introduced:
+   user-entered, AI-extracted-from-documents, imported-from-external-
+   systems, and verified-manually. AI-extracted data is explicitly never
+   classified as `self_reported`. This changes `app/models/enums.py`'s
+   `AttributionSource` enum for Career DNA itself, not just new Sprint 3
+   tables -- flagged as a real Sprint 2 schema touch-point despite
+   Career DNA being otherwise "use as-is, no redesign" (see Section 9
+   below).
+4. **JobListing lifecycle** -- soft-delete/expiry (`expires_at`/
+   `is_active`), per Decision 4, to preserve historical `MatchResult`,
+   `Application`, and `RecruiterContact` references.
 
-## 8. What Phase 6 (Architecture Review) should independently check
+## 8. Independent Phase 6 review -- findings
 
-Per `orion-governance/architecture/ArchitectureReviewChecklist.md`, an
-independent reviewer (not this document's author) should specifically
-verify: whether the CV Intelligence -> Career DNA write boundary
-(Section 4) is actually enforceable in code review, not just stated
-here; whether `MatchScoreComponent` as a separate table vs. embedding in
-`MatchResult` is the right call at real scale; and whether the Provider
-Interface (Section 3) actually accommodates RSS-only providers cleanly,
-or whether `fetch_listings`'s cursor semantics silently assume
-API-style pagination.
+Performed as an adversarial third-party-PR review, per the Sprint 3 v1.1
+directive, not a self-review. Full findings, resolutions, and the ARB
+recommendation are in `docs/SPRINT-3-ARCHITECTURE-REVIEW.md`. The
+Must-fix items found (status-history-as-JSON contradicting ADR 0004's
+own history-preservation principle; an undefined `ProviderFetchResult`
+type; unresolved RSS/API pagination ambiguity; an unspecified
+`credentials_ref` mechanism; a File Storage field with no interface
+behind it) are already resolved directly in this document, above,
+following this project's established convention (see
+`docs/SPRINT-2-ARCHITECTURE-REVIEW.md`) of fixing the spec in place
+rather than only describing the fix in a separate report.
+
+## 9. Remaining items for Stage 1 (CV Intelligence) implementation to address
+
+Not blocking Phase 6 approval, but must be satisfied before Stage 1 is
+considered done, per `orion-governance/engineering/DefinitionOfDone.md`:
+
+- **Enforcing the CV Intelligence -> Career DNA write boundary
+  (Section 4).** Stating "CV Intelligence only writes through existing
+  service functions" is not self-enforcing. Stage 1 must include either
+  a lint/import-boundary check (e.g. forbidding
+  `app.services.cv_intelligence` from importing `app.models.person`,
+  `app.models.employment`, `app.models.skills` directly) or, at minimum,
+  a code-review checklist item, and a test that would fail if the
+  boundary were violated.
+- **Provider test fixtures.** No provider implementation should be
+  tested against a real external API in CI. Stage 2 (Job Provider
+  Framework) needs a `MockProviderClient` implementing
+  `JobProviderClient` against fixture data, established before the
+  first real provider is built, not after.
+- **`MatchResult`/`MatchScoreComponent` cascade behavior.** Both should
+  cascade-delete from `Person` (`ondelete="CASCADE"`, consistent with
+  every other Career-DNA-adjacent table), independent of the
+  deliberately-NOT-cascading-from-`JobListing` behavior already
+  specified in Section 5.
+- **`MatchScoreComponent.explanation`, AI-readiness.** Currently
+  specified as free text. Recommend pairing it with a structured
+  `reason_code` enum (e.g. `strong_skill_overlap`,
+  `salary_below_range`) alongside the human-readable string, so a
+  future AI consumer (or the dashboard itself) can reason over match
+  quality without parsing prose. Not a blocker; a Worth-fixing item for
+  Stage 3.
