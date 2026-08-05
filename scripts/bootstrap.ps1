@@ -33,6 +33,18 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# PowerShell 7.3+ defaults to treating any stderr output from native
+# commands (docker, git, etc.) as a terminating error, via
+# $PSNativeCommandUseErrorActionPreference. Docker/BuildKit routinely
+# writes normal progress output to stderr, which then gets misread as a
+# script-stopping failure even on success. This script already checks
+# $LASTEXITCODE explicitly after every native command, which is the
+# correct and sufficient signal -- so disable this PS7 behavior here
+# rather than relying on stderr content.
+if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
+    $PSNativeCommandUseErrorActionPreference = $false
+}
+
 # --- Resolve paths relative to this script, not the caller's cwd ---
 # This is what makes the script work whether the repo lives at
 # C:\Projects\Career OS, D:\Development\CareerOS, E:\Source\CareerOS, or
@@ -67,6 +79,22 @@ function Stop-Bootstrap {
     Write-Host ""
     Write-Host "Bootstrap stopped. Fix the issue above and re-run this script -- every step is safe to repeat." -ForegroundColor Red
     exit 1
+}
+
+# Runs a docker/docker-compose command while shielding it from PowerShell's
+# native-stderr-as-terminating-error behavior. Docker/BuildKit/Compose
+# routinely write normal progress output to stderr; depending on PS
+# edition/version/host, that can otherwise be misread as a script-stopping
+# error even on success. All output still streams to the console live;
+# only $LASTEXITCODE (returned here) is treated as the real signal.
+function Invoke-DockerCompose {
+    param([Parameter(Mandatory)][string[]]$Arguments)
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & docker @Arguments 2>&1 | ForEach-Object { Write-Host $_ }
+    $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousEap
+    return $exitCode
 }
 
 Write-Host "ORION Platform / CareerOS -- developer bootstrap" -ForegroundColor Magenta
@@ -165,9 +193,17 @@ $PostgresPort = Get-EnvValue -Name "POSTGRES_PORT" -Default "5432"
 # --- 7. Build containers ---
 if (-not $SkipBuild) {
     Write-Step "Building containers (docker compose build) -- this can take a few minutes the first time"
-    docker compose build
-    if ($LASTEXITCODE -ne 0) {
-        Stop-Bootstrap "'docker compose build' failed. See the output above for the failing step."
+    # Force BuildKit's plain-text progress output. Its default animated/TTY
+    # renderer can get garbled or truncated when captured by PowerShell,
+    # which then sometimes surfaces as a confusing NativeCommandError
+    # instead of the actual build output.
+    $env:BUILDKIT_PROGRESS = "plain"
+    # NOTE: --progress is a global `docker compose` flag in current Compose
+    # versions (v5+), not a `build`-subcommand flag -- it must come before
+    # the subcommand, not after it.
+    $buildExitCode = Invoke-DockerCompose -Arguments @("compose", "--progress=plain", "build")
+    if ($buildExitCode -ne 0) {
+        Stop-Bootstrap "'docker compose build' failed (exit code $buildExitCode). See the output above for the failing step."
     }
     Write-Ok "Images built"
 } else {
@@ -176,9 +212,9 @@ if (-not $SkipBuild) {
 
 # --- 8. Start services ---
 Write-Step "Starting services (docker compose up -d)"
-docker compose up -d
-if ($LASTEXITCODE -ne 0) {
-    Stop-Bootstrap "'docker compose up -d' failed. See the output above."
+$upExitCode = Invoke-DockerCompose -Arguments @("compose", "up", "-d")
+if ($upExitCode -ne 0) {
+    Stop-Bootstrap "'docker compose up -d' failed (exit code $upExitCode). See the output above."
 }
 Write-Ok "Containers started"
 
@@ -190,8 +226,12 @@ Write-Ok "Containers started"
 Write-Step "Running database migrations"
 $migrationOk = $false
 for ($attempt = 1; $attempt -le 10; $attempt++) {
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     docker compose exec -T backend alembic upgrade head *> $null
-    if ($LASTEXITCODE -eq 0) {
+    $migrationExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousEap
+    if ($migrationExitCode -eq 0) {
         $migrationOk = $true
         break
     }
