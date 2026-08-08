@@ -1,21 +1,21 @@
 {
   "code_coverage": {
-    "percent_covered": 96.01
+    "percent_covered": 96.26
   },
   "cyclomatic_complexity": {
-    "average": 1.52,
-    "max": 7,
-    "count": 209
+    "average": 1.58,
+    "max": 11,
+    "count": 282
   },
   "dependencies": {
-    "backend_python": 17,
+    "backend_python": 19,
     "frontend_npm": 7
   },
-  "migration_count": 2,
-  "api_endpoint_count": 25,
+  "migration_count": 4,
+  "api_endpoint_count": 31,
   "docker_image_size_mb": null,
   "security_findings": {
-    "vulnerabilities_found": 22,
+    "vulnerabilities_found": 59,
     "vulnerable_packages": [
       {
         "name": "python-jose",
@@ -38,6 +38,49 @@
           "PYSEC-2026-3036",
           "PYSEC-2026-3040",
           "PYSEC-2026-3039"
+        ]
+      },
+      {
+        "name": "pypdf",
+        "version": "5.1.0",
+        "vuln_ids": [
+          "PYSEC-2026-1833",
+          "PYSEC-2026-1829",
+          "PYSEC-2026-1832",
+          "PYSEC-2026-1830",
+          "PYSEC-2026-1831",
+          "PYSEC-2026-1827",
+          "PYSEC-2026-1828",
+          "PYSEC-2026-3023",
+          "PYSEC-2026-3022",
+          "PYSEC-2026-3017",
+          "PYSEC-2026-3019",
+          "PYSEC-2026-3020",
+          "PYSEC-2026-3018",
+          "PYSEC-2026-3021",
+          "PYSEC-2026-3011",
+          "PYSEC-2026-3007",
+          "PYSEC-2026-3004",
+          "PYSEC-2026-3005",
+          "PYSEC-2026-3006",
+          "PYSEC-2026-3014",
+          "PYSEC-2026-3024",
+          "PYSEC-2026-3026",
+          "PYSEC-2026-3016",
+          "PYSEC-2026-3010",
+          "PYSEC-2026-3015",
+          "PYSEC-2026-3025",
+          "PYSEC-2026-3013",
+          "PYSEC-2026-3009",
+          "PYSEC-2026-3012",
+          "PYSEC-2026-3027",
+          "PYSEC-2026-3613",
+          "PYSEC-2026-3610",
+          "PYSEC-2026-3612",
+          "PYSEC-2026-3611",
+          "GHSA-jm82-fx9c-mx94",
+          "CVE-2026-71852",
+          "CVE-2026-71870"
         ]
       },
       {
@@ -72,16 +115,16 @@
     ]
   },
   "technical_debt": {
-    "open": 13,
-    "resolved": 11
+    "open": 19,
+    "resolved": 12
   },
   "architecture_compliance": {
     "kernel_imports_product_code": [],
     "compliant": true
   },
   "lines_of_code": {
-    "backend_app": 2830,
-    "kernel": 425,
-    "tests": 1064
+    "backend_app": 3517,
+    "kernel": 1009,
+    "tests": 1494
   }
 }
