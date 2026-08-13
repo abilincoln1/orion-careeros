@@ -47,6 +47,17 @@ class ExtractedEmployment:
     start_date: ExtractedField[date] | None = None
     end_date: ExtractedField[date] | None = None
     description: ExtractedField[str] | None = None
+    # Added TD-023 Option B: EmploymentCreate (the existing Sprint 2
+    # schema) requires employment_type, which this model previously had
+    # no way to carry -- discovered only when actually wiring extraction
+    # through to Career DNA, not anticipated at design time. A plain
+    # string, matching skill_type/category's existing pattern (matches
+    # EmploymentType enum values loosely typed here deliberately, same
+    # product-agnosticism reasoning as those fields -- see the note at
+    # the bottom of this file). None means the source text did not
+    # clearly indicate a type; the consuming product's mapping layer
+    # must then apply an explicit, disclosed fallback, never a silent one.
+    employment_type: ExtractedField[str] | None = None
 
 
 @dataclass
@@ -62,6 +73,12 @@ class ExtractedEducation:
 class ExtractedSkill:
     skill_name: ExtractedField[str]
     skill_type: ExtractedField[str] | None = None  # matches SkillType enum values
+    # Added TD-023 Option B, same reasoning as ExtractedEmployment.
+    # employment_type above: PersonSkillCreate requires `proficiency`,
+    # which this model had no way to carry. None means undetermined from
+    # source text; the consuming product must apply an explicit,
+    # disclosed fallback.
+    proficiency: ExtractedField[str] | None = None
 
 
 @dataclass

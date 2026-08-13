@@ -67,14 +67,17 @@ class ExtractionTriggerRequest(BaseModel):
 
 class ApplySummary(BaseModel):
     """What document_intelligence_service.apply() actually did -- states
-    explicitly what was and was not written to Career DNA, per TD-023:
-    Employment/Education/Certification/Project/Achievement extraction is
-    NOT applied in Stage 1 (no attribution_source support on those
-    entities yet), so this must never silently imply more was written
-    than actually was."""
+    explicitly what was written to Career DNA and what was skipped and
+    why (duplicates, conflicts, defaulted fields), per this project's
+    Truth First principle. TD-023 Option B: Employment and Skill are now
+    applied with AI_EXTRACTED provenance; Education/Certification/
+    Project/Achievement remain out of scope (no service layer exists
+    for them at all yet -- a separate, larger gap than TD-023 itself,
+    unaffected by this fix)."""
 
     person_updated: bool
+    employments_applied: int
+    employments_skipped_conflict: int
     skills_applied: int
     skills_skipped_duplicate: int
-    employments_extracted_not_applied: int
     note: str

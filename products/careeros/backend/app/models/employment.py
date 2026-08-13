@@ -16,7 +16,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-from app.models.enums import EmployerSizeRange, EmploymentType, SeniorityLevel
+from app.models.enums import AttributionSource, EmployerSizeRange, EmploymentType, SeniorityLevel
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin, db_enum
 
 
@@ -105,6 +105,21 @@ class Employment(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     is_current: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # TD-023 Option B (narrow fix, authorised scope -- see
+    # docs/TD-023-RESOLUTION-REPORT.md and the MVP Priority 1
+    # authorisation): Employment previously had no provenance concept at
+    # all. Mirrors PersonSkill/PersonCompetency/PersonTechnology's
+    # existing attribution_source column exactly -- same enum, same
+    # default, same must-fix #5 protection (never exposed on
+    # EmploymentCreate/EmploymentUpdate; only settable via an explicit
+    # service-layer parameter, used by document_intelligence_service,
+    # never by the public API).
+    attribution_source: Mapped[AttributionSource] = mapped_column(
+        db_enum(AttributionSource, "attribution_source"),
+        nullable=False,
+        default=AttributionSource.SELF_REPORTED,
+        server_default=AttributionSource.SELF_REPORTED.value,
+    )
 
     employer: Mapped["Employer"] = relationship(foreign_keys=[employer_id], lazy="joined")
 

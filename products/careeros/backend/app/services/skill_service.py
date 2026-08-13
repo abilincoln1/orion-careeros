@@ -14,7 +14,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.enums import EvidenceSubjectType, SkillType
+from app.models.enums import AttributionSource, EvidenceSubjectType, SkillType
 from app.models.person import Person
 from app.models.skills import PersonSkill, Skill
 from app.repositories.taxonomy import upsert_taxonomy
@@ -22,7 +22,22 @@ from app.schemas.career_dna import PersonSkillCreate, PersonSkillUpdate
 from app.services.evidence_service import delete_evidence_links_for_subject
 
 
-async def add_person_skill(db: AsyncSession, person: Person, payload: PersonSkillCreate) -> PersonSkill:
+async def add_person_skill(
+    db: AsyncSession,
+    person: Person,
+    payload: PersonSkillCreate,
+    *,
+    attribution_source: AttributionSource = AttributionSource.SELF_REPORTED,
+) -> PersonSkill:
+    """
+    attribution_source is deliberately NOT part of PersonSkillCreate --
+    this is must-fix #5's original protection, unchanged. The only
+    caller passing a non-default value is
+    document_intelligence_service.apply() (AI_EXTRACTED). No HTTP
+    request body can set this (TD-023 Option B applies the identical
+    pattern already used here to Employment, rather than inventing a
+    new mechanism).
+    """
     skill = await upsert_taxonomy(
         db,
         Skill,
@@ -45,6 +60,7 @@ async def add_person_skill(db: AsyncSession, person: Person, payload: PersonSkil
         years_experience=payload.years_experience,
         last_used_date=payload.last_used_date,
         employment_id=payload.employment_id,
+        attribution_source=attribution_source,
     )
     db.add(person_skill)
     await db.commit()

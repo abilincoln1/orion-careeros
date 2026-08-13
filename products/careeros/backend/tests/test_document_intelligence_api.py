@@ -274,10 +274,12 @@ class TestApply:
         person = await client.get("/api/v1/career-dna/person/me", headers=headers)
         assert person.json()["headline"] == "My Own Headline"
 
-    async def test_apply_reports_skills_and_employments_not_applied(self, client):
-        """TD-023: the response must honestly report what was NOT
-        written to Career DNA and why -- never silently imply more
-        happened than actually did."""
+    async def test_apply_persists_employment_and_skills_with_ai_extracted_provenance(self, client):
+        """TD-023 Option B: the response must confirm employment and
+        skills were actually written to Career DNA, and the resulting
+        records must carry attribution_source=ai_extracted -- not just
+        a summary count, but the real persisted records checked via the
+        existing Career DNA API."""
         headers = await _person_headers(client)
         upload = await _upload_pdf(client, headers)
         document_id = upload.json()["id"]
@@ -290,14 +292,141 @@ class TestApply:
             f"/api/v1/document-intelligence/documents/{document_id}/runs/{run_id}/apply",
             headers=headers,
         )
+        assert resp.status_code == 200
         body = resp.json()
-        assert body["skills_applied"] == 0
-        assert body["employments_extracted_not_applied"] == 1
-        assert "TD-023" in body["note"] or "attribution" in body["note"].lower()
+        assert body["employments_applied"] == 1
+        assert body["skills_applied"] == 2  # the "clean" fixture has 2 skills
+        assert body["employments_skipped_conflict"] == 0
+        assert body["skills_skipped_duplicate"] == 0
 
-        # confirm the skills genuinely were not written to Career DNA
+        # confirm via the real Career DNA API -- not just the apply() summary
+        employments = await client.get("/api/v1/career-dna/employments", headers=headers)
+        assert employments.json()["total"] == 1
+        assert employments.json()["items"][0]["attribution_source"] == "ai_extracted"
+        assert employments.json()["items"][0]["role_title_raw"] == "Software Engineer"
+
         skills = await client.get("/api/v1/career-dna/person-skills", headers=headers)
-        assert skills.json()["total"] == 0
+        assert skills.json()["total"] == 2
+        assert all(s["attribution_source"] == "ai_extracted" for s in skills.json()["items"])
+
+    async def test_apply_defaults_undetermined_employment_type_and_discloses_it(self, client):
+        """The mock 'clean' fixture doesn't specify employment_type --
+        confirms the fallback is applied AND disclosed in the note,
+        never silent."""
+        headers = await _person_headers(client)
+        upload = await _upload_pdf(client, headers)
+        document_id = upload.json()["id"]
+        extract_resp = await client.post(
+            f"/api/v1/document-intelligence/documents/{document_id}/extract", headers=headers
+        )
+        run_id = extract_resp.json()["id"]
+        resp = await client.post(
+            f"/api/v1/document-intelligence/documents/{document_id}/runs/{run_id}/apply",
+            headers=headers,
+        )
+        assert "employment_type" in resp.json()["note"]
+        assert "full_time" in resp.json()["note"]
+
+    async def test_apply_does_not_duplicate_skill_already_on_person(self, client):
+        """A skill the person already has (manually entered) must be
+        skipped, not duplicated or overwritten, when the same skill name
+        is also extracted from a CV."""
+        headers = await _person_headers(client)
+        await client.post(
+            "/api/v1/career-dna/person-skills",
+            json={"skill_name": "Python", "skill_type": "technical", "proficiency": "advanced"},
+            headers=headers,
+        )
+        upload = await _upload_pdf(client, headers)
+        document_id = upload.json()["id"]
+        extract_resp = await client.post(
+            f"/api/v1/document-intelligence/documents/{document_id}/extract", headers=headers
+        )
+        run_id = extract_resp.json()["id"]
+
+        resp = await client.post(
+            f"/api/v1/document-intelligence/documents/{document_id}/runs/{run_id}/apply",
+            headers=headers,
+        )
+        body = resp.json()
+        assert body["skills_skipped_duplicate"] == 1  # "Python" already existed
+        assert body["skills_applied"] == 1  # "SQL" is new
+
+        skills = await client.get("/api/v1/career-dna/person-skills", headers=headers)
+        assert skills.json()["total"] == 2
+        # the manually-entered Python skill must retain its ORIGINAL
+        # attribution -- confirms apply() genuinely skips, not overwrites
+        python_skill = next(s for s in skills.json()["items"] if s["proficiency"] == "advanced")
+        assert python_skill["attribution_source"] == "self_reported"
+
+    async def test_apply_skips_employment_conflicting_with_existing_primary_current(self, client):
+        """A pre-existing primary current employment (manually entered)
+        must not be silently overwritten or duplicated by a conflicting
+        extracted 'is_current' employment -- the existing Sprint 2
+        DB-level constraint is respected, and the conflict is reported,
+        not hidden."""
+        headers = await _person_headers(client)
+        await client.post(
+            "/api/v1/career-dna/employments",
+            json={
+                "employer_name": "Existing Corp",
+                "role_title": "Existing Role",
+                "employment_type": "full_time",
+                "start_date": "2020-01-01",
+                "is_current": True,
+            },
+            headers=headers,
+        )
+        upload = await _upload_pdf(client, headers)
+        document_id = upload.json()["id"]
+        extract_resp = await client.post(
+            f"/api/v1/document-intelligence/documents/{document_id}/extract", headers=headers
+        )
+        run_id = extract_resp.json()["id"]
+
+        resp = await client.post(
+            f"/api/v1/document-intelligence/documents/{document_id}/runs/{run_id}/apply",
+            headers=headers,
+        )
+        body = resp.json()
+        assert body["employments_skipped_conflict"] == 1
+        assert body["employments_applied"] == 0
+        assert "conflicted" in body["note"].lower()
+
+        employments = await client.get("/api/v1/career-dna/employments", headers=headers)
+        assert employments.json()["total"] == 1  # only the original, manually-entered one
+        assert employments.json()["items"][0]["role_title_raw"] == "Existing Role"
+        assert employments.json()["items"][0]["attribution_source"] == "self_reported"
+
+    async def test_manually_created_employment_still_defaults_to_self_reported(self, client):
+        """Regression: the existing, unmodified public API (no
+        attribution_source in the request body) must continue to
+        produce self_reported records exactly as before TD-023 Option B."""
+        headers = await _person_headers(client)
+        resp = await client.post(
+            "/api/v1/career-dna/employments",
+            json={
+                "employer_name": "Regular Corp",
+                "role_title": "Regular Role",
+                "employment_type": "full_time",
+                "start_date": "2021-01-01",
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 201
+        assert resp.json()["attribution_source"] == "self_reported"
+
+    async def test_manually_created_skill_still_defaults_to_self_reported(self, client):
+        """Regression: confirms must-fix #5's original guarantee is
+        completely unchanged by this fix."""
+        headers = await _person_headers(client)
+        resp = await client.post(
+            "/api/v1/career-dna/person-skills",
+            json={"skill_name": "Rust", "skill_type": "technical", "proficiency": "beginner"},
+            headers=headers,
+        )
+        assert resp.status_code == 201
+        assert resp.json()["attribution_source"] == "self_reported"
 
     async def test_apply_twice_rejected(self, client):
         headers = await _person_headers(client)

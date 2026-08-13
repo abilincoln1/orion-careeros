@@ -23,6 +23,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.employment import Employer, Employment
+from app.models.enums import AttributionSource
 from app.models.person import Person
 from app.repositories.taxonomy import upsert_taxonomy
 from app.schemas.career_dna import EmploymentCreate, EmploymentPromote, EmploymentUpdate
@@ -54,7 +55,21 @@ def _is_primary_current_conflict(exc: IntegrityError) -> bool:
     return "ux_employment_one_primary_current_per_person" in message or "employment.person_id" in message
 
 
-async def create_employment(db: AsyncSession, person: Person, payload: EmploymentCreate) -> Employment:
+async def create_employment(
+    db: AsyncSession,
+    person: Person,
+    payload: EmploymentCreate,
+    *,
+    attribution_source: AttributionSource = AttributionSource.SELF_REPORTED,
+) -> Employment:
+    """
+    attribution_source is deliberately NOT part of EmploymentCreate (the
+    public API schema) -- same must-fix #5 protection PersonSkill already
+    has. The only caller that ever passes a non-default value is
+    document_intelligence_service.apply(), which passes AI_EXTRACTED
+    explicitly; no HTTP request body can set this field, confirmed by
+    EmploymentCreate having no such field at all (TD-023 Option B).
+    """
     employer = await upsert_taxonomy(
         db, Employer, name_field="name", normalized_field="normalized_name", name=payload.employer_name
     )
@@ -68,6 +83,7 @@ async def create_employment(db: AsyncSession, person: Person, payload: Employmen
         end_date=payload.end_date,
         is_current=payload.is_current,
         description=payload.description,
+        attribution_source=attribution_source,
     )
     db.add(employment)
     try:

@@ -84,8 +84,25 @@ def test_document_intelligence_service_only_imports_person_model_for_type_hints(
 
 def test_document_intelligence_service_calls_person_service_for_writes():
     """Positive check, not just an absence check: confirms the service
-    actually DOES call person_service for the one write it performs
-    (Person.headline), so this test suite would fail if that call were
-    ever silently removed in favor of a direct write."""
+    actually DOES call person_service for the Person write, so this
+    test suite would fail if that call were ever silently removed in
+    favor of a direct write."""
     source = SERVICE_PATH.read_text()
     assert "person_service.update_person" in source
+
+
+def test_document_intelligence_service_calls_employment_service_for_writes():
+    """TD-023 Option B: confirms apply() writes Employment through
+    employment_service.create_employment, never a direct ORM
+    construction of Employment."""
+    source = SERVICE_PATH.read_text()
+    assert "employment_service.create_employment" in source
+    assert "attribution_source=AttributionSource.AI_EXTRACTED" in source
+
+
+def test_document_intelligence_service_calls_skill_service_for_writes():
+    """TD-023 Option B: confirms apply() writes Skill through
+    skill_service.add_person_skill, never a direct ORM construction of
+    PersonSkill."""
+    source = SERVICE_PATH.read_text()
+    assert "skill_service.add_person_skill" in source

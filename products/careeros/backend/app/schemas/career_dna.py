@@ -141,6 +141,7 @@ class EmploymentRead(BaseModel):
     end_date: Optional[date] = None
     is_current: bool
     description: Optional[str] = None
+    attribution_source: AttributionSource
     created_at: datetime
     updated_at: datetime
 
