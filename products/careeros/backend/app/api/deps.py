@@ -99,14 +99,19 @@ def get_storage_adapter():
 
 def get_extraction_provider():
     """
-    Returns the configured DocumentExtractionProvider. Stage 1: always
-    MockDocumentExtractionProvider, per the Chief Architect's explicit
-    AI Provider Policy -- "no production LLM provider should be
-    introduced until the interface is proven." This is the ONE place
-    that will change when a real provider is authorized; every caller
-    depends on the DocumentExtractionProvider protocol, not this
-    specific class.
+    Returns the configured DocumentExtractionProvider. Now
+    DeterministicCVProvider (a real, rule-based, non-LLM parser) --
+    per the 13 August 2026 directive's "Next Task -- Minimum Real-CV
+    Extraction Capability", authorizing exactly this: a deterministic
+    parser over an LLM, since the AI Provider Policy's "no production
+    LLM provider" restriction does not prohibit deterministic
+    extraction, and this closes Priority 1's real, previously
+    disclosed limitation (extraction depended on a manually-curated
+    fixture, not the actual uploaded file's content). This remains the
+    ONE place that changes if an LLM provider is ever separately
+    authorized; every caller depends on the DocumentExtractionProvider
+    protocol, not this specific class.
     """
-    from orion_kernel.document_intelligence import MockDocumentExtractionProvider
+    from orion_kernel.document_intelligence import DeterministicCVProvider
 
-    return MockDocumentExtractionProvider(fixture="clean")
+    return DeterministicCVProvider()

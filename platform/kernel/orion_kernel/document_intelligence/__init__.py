@@ -32,6 +32,7 @@ from orion_kernel.document_intelligence.provider import (
 )
 from orion_kernel.document_intelligence.text_extraction import extract_text, TextExtractionError
 from orion_kernel.document_intelligence.mock_provider import MockDocumentExtractionProvider
+from orion_kernel.document_intelligence.deterministic_cv_provider import DeterministicCVProvider
 from orion_kernel.document_intelligence.extraction_model import (
     ExtractedAchievement,
     ExtractedCertification,
@@ -52,6 +53,7 @@ __all__ = [
     "DocumentExtractionProvider",
     "ProviderFetchError",
     "MockDocumentExtractionProvider",
+    "DeterministicCVProvider",
     "extract_text",
     "TextExtractionError",
     "ExtractedField",
