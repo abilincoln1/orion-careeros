@@ -38,3 +38,8 @@ remains in `prompts/` for now, exactly where its own explicit
 instruction placed it, rather than being silently moved here --
 avoiding the same reconstruction-accuracy risk for a file whose
 correct location was explicitly stated once already.
+
+## Directives issued so far (update, 14 August 2026)
+- `prompts/Chief_Architect_Directive_Sprint03.md` -- Sprint 3 governance + Job Intelligence design authorization (includes v1.1 amendment).
+- `prompts/Chief_Architect_Directive_Sprint3_Stage1_Completion.md` -- TD-023 resolution authorization.
+- `prompts/Chief_Architect_Directive_Job_Discovery.md` -- Priority 1 closure + lean Job Discovery authorization. **Authoritative version** -- no competing copy exists in this directory, per this README's own established convention above.

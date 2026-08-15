@@ -115,3 +115,15 @@ def get_extraction_provider():
     from orion_kernel.document_intelligence import DeterministicCVProvider
 
     return DeterministicCVProvider()
+
+
+def get_job_provider():
+    """
+    Returns the configured JobProviderClient. MVP: always
+    ArbeitnowProvider -- one provider, per the directive's explicit
+    "implement only one real provider initially" instruction. This is
+    the ONE place that changes if a second provider is ever authorized.
+    """
+    from app.job_discovery.arbeitnow_provider import ArbeitnowProvider
+
+    return ArbeitnowProvider()

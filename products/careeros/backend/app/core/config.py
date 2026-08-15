@@ -36,5 +36,16 @@ class Settings(OrionBaseSettings):
     # Platform File Storage capability until a second product needs one.
     DOCUMENT_STORAGE_PATH: str = "/app/data/document_storage"
 
+    # Job Discovery (MVP Priority 2 slice, Chief Architect directive
+    # "Priority 1 Closure & Job Discovery", 14 August 2026). Real,
+    # overridable settings -- per Section 4's explicit instruction that
+    # the salary range be "a configurable CareerOS preference rather
+    # than a hard-coded application constant." Used only as the
+    # fallback when the person has no SalaryPreference row and no
+    # per-request override is supplied -- never invented per-listing.
+    DISCOVERY_DEFAULT_SALARY_MIN: int = 40000
+    DISCOVERY_DEFAULT_SALARY_MAX: int = 110000
+    DISCOVERY_DEFAULT_CURRENCY: str = "GBP"
+
 
 get_settings = make_settings_getter(Settings)

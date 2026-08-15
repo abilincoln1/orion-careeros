@@ -207,3 +207,20 @@ class EmployerSizeRange(str, enum.Enum):
     R201_1000 = "201-1000"
     R1001_5000 = "1001-5000"
     R5001_PLUS = "5001+"
+
+
+class JobSalaryPeriod(str, enum.Enum):
+    """Job Discovery (MVP Priority 2 slice). A distinct enum from the
+    pre-existing SalaryPeriod (used by SalaryPreference.period,
+    annual/monthly/hourly/daily_rate) -- deliberately not reused,
+    because a person's stated salary preference and an external job
+    listing's provider-reported pay period are genuinely different
+    domain concepts that happen to share a name, not the same thing.
+    A real duplicate class named SalaryPeriod was mistakenly added here
+    first, silently shadowing the original and causing a genuine
+    latent value mismatch (caught only because the resulting DB type
+    name collision crashed loudly) -- corrected to this distinctly-
+    named type instead of reusing or renaming the original."""
+    YEARLY = "yearly"
+    DAILY = "daily"
+    HOURLY = "hourly"

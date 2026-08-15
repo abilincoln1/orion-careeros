@@ -17,7 +17,13 @@ employment_preferences:
   contract_types: ["permanent", "inside_ir35", "outside_ir35"]
   work_mode: ["remote", "hybrid", "office_if_justified"]
   salary:
-    permanent_gbp: { min: 40000, max: 80000, allow_above_max: true }
+    # Updated per the Job Discovery MVP directive (14 August 2026) --
+    # the real, current default range. Now actually consumed by
+    # DiscoverySettings (app/core/config.py) as the fallback when no
+    # per-request override and no SalaryPreference row exist -- this
+    # is the first real consumer of this file's documented shape, not
+    # just documentation of an intended future one.
+    permanent_gbp: { min: 40000, max: 110000, allow_above_max: true }
     contract_gbp_per_day: { min: 350, max: 700, allow_above_max: true }
 
 matching_weights:

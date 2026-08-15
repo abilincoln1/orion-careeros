@@ -35,3 +35,7 @@ from app.models.preferences import (  # noqa: F401
 # Document Intelligence Engine (Sprint 3 Stage 1) -- see
 # docs/DOCUMENT-INTELLIGENCE-ARCHITECTURE.md and ADR 0006.
 from app.models.document import Document, DocumentExtractionRun, DocumentVersion  # noqa: F401
+
+# Job Discovery (MVP Priority 2 slice) -- see
+# docs/LEAN-JOB-DISCOVERY-IMPLEMENTATION-PLAN.md.
+from app.models.job import JobListing, JobProvider  # noqa: F401
