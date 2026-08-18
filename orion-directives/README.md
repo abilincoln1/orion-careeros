@@ -43,3 +43,12 @@ correct location was explicitly stated once already.
 - `prompts/Chief_Architect_Directive_Sprint03.md` -- Sprint 3 governance + Job Intelligence design authorization (includes v1.1 amendment).
 - `prompts/Chief_Architect_Directive_Sprint3_Stage1_Completion.md` -- TD-023 resolution authorization.
 - `prompts/Chief_Architect_Directive_Job_Discovery.md` -- Priority 1 closure + lean Job Discovery authorization. **Authoritative version** -- no competing copy exists in this directory, per this README's own established convention above.
+
+## Directory formalized as authoritative directive home (update, 16 August 2026)
+Per the Chief Architect's explicit governance guidance:
+`/orion-governance/` = standards, ADRs, risk, engineering controls.
+`/orion-directives/` = authoritative Chief Architect instructions (this directory).
+`/prompts/` = reusable/operational AI prompts.
+
+- `orion-directives/ORION-CA-DIRECTIVE-S3-UI-MVP-001.md` -- Lean CareerOS UI MVP, authoritative, implemented and accepted.
+- Earlier directives remain in `prompts/` (historical location, not retroactively moved, to avoid rewriting already-referenced paths). New directives of this kind should be placed here going forward.

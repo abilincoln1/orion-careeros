@@ -68,6 +68,40 @@ class TestSuccessfulRetrieval:
         assert results[0].title == "DevOps Engineer"
         await client.aclose()
 
+    async def test_multi_word_query_matches_on_any_significant_word_not_the_full_phrase(self):
+        """Real bug found via live user testing: the original
+        implementation required the ENTIRE multi-word query to appear
+        verbatim, which returned zero results for any realistic
+        CV-derived job title. 'Python Developer' should match
+        'Python Developer' via the word 'python' even though the
+        listing's exact title differs."""
+        client = _client_with_response(_SAMPLE_RESPONSE)
+        provider = ArbeitnowProvider(http_client=client)
+        results = await provider.search(
+            query="Technology Analyst - Python Developer", location=None, remote_only=False
+        )
+        assert len(results) == 1
+        assert results[0].title == "Python Developer"
+        await client.aclose()
+
+    async def test_query_with_no_matching_words_returns_empty(self):
+        client = _client_with_response(_SAMPLE_RESPONSE)
+        provider = ArbeitnowProvider(http_client=client)
+        results = await provider.search(query="Marketing Executive", location=None, remote_only=False)
+        assert results == []
+        await client.aclose()
+
+    async def test_query_that_is_only_short_or_punctuation_words_does_not_filter_at_all(self):
+        """A query like '- - -' should not accidentally exclude
+        everything (or match everything by accident) -- treated the
+        same as no query, per 'do not invent/exclude on uncertain
+        data'."""
+        client = _client_with_response(_SAMPLE_RESPONSE)
+        provider = ArbeitnowProvider(http_client=client)
+        results = await provider.search(query="- - -", location=None, remote_only=False)
+        assert len(results) == 2  # both sample listings returned, unfiltered
+        await client.aclose()
+
     async def test_remote_only_filter(self):
         client = _client_with_response(_SAMPLE_RESPONSE)
         provider = ArbeitnowProvider(http_client=client)

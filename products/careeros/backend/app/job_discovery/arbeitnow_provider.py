@@ -143,8 +143,19 @@ class ArbeitnowProvider:
             # not a bug. Reported explicitly in the completion report.
             tags = item.get("tags", [])
             searchable_text = " ".join([title] + (tags if isinstance(tags, list) else [])).lower()
-            if query_lower and query_lower not in searchable_text:
-                continue
+            # Client-side relevance filter: word-level match, not full-
+            # phrase. Originally required the ENTIRE query string to
+            # appear verbatim in title+tags -- found, via real user
+            # testing, to return zero results for any realistic
+            # multi-word CV-derived job title (e.g. "Technology Analyst
+            # - Systems Engineer" never appears as one literal phrase
+            # in any real posting). Matching on any single meaningful
+            # word instead is far more forgiving and realistic, while
+            # still being a real relevance filter, not simply removed.
+            if query_lower:
+                query_words = [w for w in query_lower.split() if len(w) > 2 and w.isalnum()]
+                if query_words and not any(w in searchable_text for w in query_words):
+                    continue
 
             salary_min = item.get("salary_min")
             salary_max = item.get("salary_max")
